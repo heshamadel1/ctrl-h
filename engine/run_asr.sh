@@ -1,5 +1,5 @@
 #!/bin/bash
-# usage: bash run_asr.sh <name>   (needs <name>_vo.wav and <name>_segs.txt in $WORK; sherpa-onnx + whisper-small model in $SHERPA)
+# usage: bash run_asr.sh <name>   (needs <name>_vo.wav and <name>_segs.txt in $WORK, and the sherpa-onnx Whisper-small MODEL FILES in $SHERPA/sherpa-onnx-whisper-small; the sherpa-onnx Python package is not used)
 SHERPA=${SHERPA:-$HOME/sherpa}; WORK=${WORK:-$PWD}
 cd "$SHERPA"
 for n in "$@"; do

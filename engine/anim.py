@@ -14,7 +14,13 @@ def _hex(h, d):
 OR = _hex("CTRLH_ACCENT", (255, 138, 17))   # accent colour, e.g. CTRLH_ACCENT=#00B8D9
 OR2 = tuple(min(255, int(c + (255 - c) * 0.2)) for c in OR)   # lighter accent
 ORD = tuple(int(c * 0.67) for c in OR)   # darker accent (button depth)
-INK = (10, 11, 13); PAPER = (245, 245, 245); CARDC = (24, 26, 31)
+INK = (10, 11, 13); PAPER = (245, 245, 245)
+CARDC = _hex("CTRLH_CARD_COLOR", (24, 26, 31))   # card background colour, e.g. CTRLH_CARD_COLOR=#1B2A41
+CARD_NUM = tuple(int(c * 0.85) for c in CARDC); CARD_GLASS = tuple(min(255, c + 10) for c in CARDC)   # derived: `numbers` / `glass` card fills
+_ALL_STYLES = ["classic", "proposed", "glass", "numbers"]
+_DEFAULT_STYLE = "classic"   # what someone who just installed the kit gets
+_cs = os.environ.get("CTRLH_CARD_STYLES", "").replace(" ", "").lower()   # e.g. glass | classic,numbers | all
+CARD_STYLES = _ALL_STYLES if _cs == "all" else ([x for x in _cs.split(",") if x in _ALL_STYLES] or [_DEFAULT_STYLE])
 GRAYC = (150, 156, 170); RED = (255, 92, 92); GRN = (80, 230, 140); AMB = (255, 196, 80); BLUE = (150, 200, 255); VIO = (176, 148, 255)
 # texts that are part of the brand / language; override with environment variables
 LBL_OK = os.environ.get("CTRLH_LABEL_OK", "صح"); LBL_BAD = os.environ.get("CTRLH_LABEL_WRONG", "غلط")
@@ -139,6 +145,7 @@ def block_h(blk, width):
     if k == "zoom": return zoom_geom(blk, width)["total"]
     if k == "phone": return 600 if WIDE else 760
     if k == "cta": return 220 if WIDE else 260
+    if k in EXTRA_H: return EXTRA_H[k](blk, width)
     return 100
 
 
@@ -265,7 +272,7 @@ def draw_card(d, box, b, t, k):
         else: body(cx + 20, dyy=(20 if tag else 0))
     elif st == "glass":
         y0d, y1d = y0 + dy, y1 + dy
-        d.rounded_rectangle((x0, y0d, x1, y1d), 26, fill=(34, 32, 30, int(215 * al)), outline=(255, 255, 255, int(120 * al)), width=2)
+        d.rounded_rectangle((x0, y0d, x1, y1d), 26, fill=CARD_GLASS + (int(215 * al),), outline=(255, 255, 255, int(120 * al)), width=2)
         d.rounded_rectangle((x0 + 3, y0d + 3, x1 - 3, y0d + (y1d - y0d) * 0.4), 24, fill=(255, 255, 255, int(14 * al)))
         if ok is not None and (x1 - x0) < 600: badge(d, x0 + 40, y0d + 40, ok, al, r=22); body(cx, dyy=18)
         else:
@@ -273,7 +280,7 @@ def draw_card(d, box, b, t, k):
             body(cx + (30 if ok is not None else 0))
     elif st == "numbers":
         y0d, y1d = y0 + dy, y1 + dy
-        d.rounded_rectangle((x0, y0d, x1, y1d), 26, fill=A((20, 22, 27), al), outline=A(lerp((60, 63, 72), OR, hl), al), width=3)
+        d.rounded_rectangle((x0, y0d, x1, y1d), 26, fill=A(CARD_NUM, al), outline=A(lerp((60, 63, 72), OR, hl), al), width=3)
         if (x1 - x0) < 600: pass   # squares: no index numbers (his request 2026-10-30)
         else: d.text((x1 - 50, cy + 6), "%02d" % (b.get("idx", 0) + 1), font=F(MONO, 110), fill=A(lerp((30, 32, 38), OR, 0.35), al), anchor="rm")
         if ok is not None and (x1 - x0) < 600:
@@ -995,6 +1002,485 @@ def bg_motion(im, t):
 
 
 # ------------------------------------------------------------------ engine
+# ------------------------------------------------------------------ extra blocks (2026-10-31): icards, steplist, fixcards
+def _fit(text, size, maxw, lo=16, mono=None):
+    """largest font size <= size so that text fits maxw"""
+    if mono is None: mono = text.isascii()
+    s = size
+    while s > lo:
+        f = F(MONO, s) if mono else F(ARB, s)
+        w = f.getlength(text) if mono else f.getlength(text, direction="rtl", language="ar")
+        if w <= maxw: break
+        s -= 2
+    return s
+
+
+def _grid(box, n, cols, gap, rtl=True):
+    """cell boxes for n items in `cols` columns inside box; first item at the right when rtl"""
+    x0, y0, x1, y1 = box; rows = -(-n // cols)
+    cw = (x1 - x0 - (cols - 1) * gap) / cols; ch = (y1 - y0 - (rows - 1) * gap) / rows
+    out = []
+    for i in range(n):
+        r, c = divmod(i, cols); c = cols - 1 - c if rtl else c
+        out.append((x0 + c * (cw + gap), y0 + r * (ch + gap), x0 + c * (cw + gap) + cw, y0 + r * (ch + gap) + ch))
+    return out
+
+
+def draw_icon(d, kind, cx, cy, sz, q, al):
+    """small animated line-icon; q = animation progress 0..1"""
+    G2 = (70, 73, 82); lw = max(3, int(sz * 0.07)); q = ss(q)
+    if kind == "shield":
+        d.rounded_rectangle((cx - 0.6 * sz, cy - 0.75 * sz, cx + 0.6 * sz, cy + 0.75 * sz), int(0.45 * sz), outline=A(OR, al), width=lw)
+        r = 0.12 * sz * (0.5 + 0.5 * q); d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=A(OR, al))
+        if q > 0.6: d.line([(cx - 0.25 * sz, cy + 0.05 * sz), (cx - 0.05 * sz, cy + 0.28 * sz), (cx + 0.3 * sz, cy - 0.2 * sz)], fill=A(GRN, al * ss((q - 0.6) / 0.4)), width=lw, joint="curve")
+    elif kind == "grid":
+        lit = q * 6
+        for i in range(6):
+            r, c = divmod(i, 3); x = cx - 1.05 * sz + c * 0.75 * sz; y = cy - 0.75 * sz + r * 0.85 * sz
+            d.rounded_rectangle((x, y, x + 0.55 * sz, y + 0.55 * sz), int(0.12 * sz), fill=A(OR if lit > i else G2, al))
+    elif kind == "bar":
+        d.rounded_rectangle((cx - 1.3 * sz, cy - 0.14 * sz, cx + 1.1 * sz, cy + 0.14 * sz), int(0.14 * sz), fill=A(G2, al * 0.6))
+        d.rounded_rectangle((cx - 1.3 * sz, cy - 0.14 * sz, cx - 1.3 * sz + 2.0 * sz * q, cy + 0.14 * sz), int(0.14 * sz), fill=A(OR, al))
+        d.line([(cx + 1.25 * sz, cy - 0.6 * sz), (cx + 1.25 * sz, cy + 0.6 * sz)], fill=A(RED, al), width=lw)
+    elif kind == "clock":
+        d.ellipse((cx - 0.85 * sz, cy - 0.85 * sz, cx + 0.85 * sz, cy + 0.85 * sz), outline=A(OR, al), width=lw)
+        a = -math.pi / 2 + 2 * math.pi * 0.85 * q
+        d.line([(cx, cy), (cx + 0.6 * sz * math.cos(a), cy + 0.6 * sz * math.sin(a))], fill=A(OR, al), width=lw)
+        d.line([(cx, cy), (cx, cy - 0.4 * sz)], fill=A(GRAYC, al), width=lw)
+    elif kind == "lock":
+        up = (1 - q) * 0.35 * sz
+        d.arc((cx - 0.4 * sz, cy - 1.0 * sz - up, cx + 0.4 * sz, cy - 0.1 * sz - up), 180, 360, fill=A(OR, al), width=lw)
+        d.rounded_rectangle((cx - 0.65 * sz, cy - 0.45 * sz, cx + 0.65 * sz, cy + 0.65 * sz), int(0.14 * sz), fill=A(OR if q > 0.9 else G2, al))
+        d.ellipse((cx - 0.09 * sz, cy - 0.1 * sz, cx + 0.09 * sz, cy + 0.08 * sz), fill=A(INK, al))
+    elif kind == "nodes":
+        pts = [(cx, cy - 0.7 * sz), (cx - 0.8 * sz, cy + 0.6 * sz), (cx + 0.8 * sz, cy + 0.6 * sz)]
+        for i in range(3):
+            a_, b_ = pts[i], pts[(i + 1) % 3]; k_ = ss(prog(q, i / 3, (i + 1) / 3))
+            d.line([a_, (a_[0] + (b_[0] - a_[0]) * k_, a_[1] + (b_[1] - a_[1]) * k_)], fill=A(GRAYC, al), width=lw)
+        for i, p in enumerate(pts):
+            r = 0.2 * sz; d.ellipse((p[0] - r, p[1] - r, p[0] + r, p[1] + r), fill=A(OR if q > i / 3 else G2, al))
+    elif kind == "key":
+        d.ellipse((cx - 0.95 * sz, cy - 0.35 * sz, cx - 0.25 * sz, cy + 0.35 * sz), outline=A(OR, al), width=lw)
+        x2 = cx - 0.25 * sz + 1.2 * sz * q; d.line([(cx - 0.25 * sz, cy), (x2, cy)], fill=A(OR, al), width=lw)
+        for fx in (0.55, 0.85):
+            if q * 1.2 > fx: d.line([(cx - 0.25 * sz + fx * 1.2 * sz, cy), (cx - 0.25 * sz + fx * 1.2 * sz, cy + 0.3 * sz)], fill=A(OR, al), width=lw)
+    elif kind == "warn":
+        d.polygon([(cx, cy - 0.85 * sz), (cx - 0.95 * sz, cy + 0.7 * sz), (cx + 0.95 * sz, cy + 0.7 * sz)], outline=A(AMB, al), width=lw)
+        d.line([(cx, cy - 0.3 * sz), (cx, cy + 0.2 * sz)], fill=A(AMB, al), width=lw); r = 0.07 * sz; d.ellipse((cx - r, cy + 0.4 * sz - r, cx + r, cy + 0.4 * sz + r), fill=A(AMB, al))
+    elif kind == "check":
+        d.ellipse((cx - 0.85 * sz, cy - 0.85 * sz, cx + 0.85 * sz, cy + 0.85 * sz), outline=A(GRN, al), width=lw)
+        pts = [(cx - 0.4 * sz, cy + 0.05 * sz), (cx - 0.1 * sz, cy + 0.38 * sz), (cx + 0.45 * sz, cy - 0.3 * sz)]
+        if q > 0.3: d.line(pts[:2], fill=A(GRN, al), width=lw)
+        if q > 0.6: d.line(pts[1:], fill=A(GRN, al), width=lw)
+    elif kind == "db":
+        for i in range(3):
+            y = cy - 0.7 * sz + i * 0.55 * sz; d.ellipse((cx - 0.8 * sz, y - 0.22 * sz, cx + 0.8 * sz, y + 0.22 * sz), outline=A(OR if q > i / 3 else G2, al), width=lw)
+    elif kind == "bolt":
+        d.polygon([(cx + 0.15 * sz, cy - 0.95 * sz), (cx - 0.55 * sz, cy + 0.1 * sz), (cx - 0.05 * sz, cy + 0.1 * sz), (cx - 0.2 * sz, cy + 0.95 * sz), (cx + 0.6 * sz, cy - 0.2 * sz), (cx + 0.08 * sz, cy - 0.2 * sz)], fill=A(OR, al * (0.4 + 0.6 * q)))
+    else:
+        d.ellipse((cx - 0.7 * sz, cy - 0.7 * sz, cx + 0.7 * sz, cy + 0.7 * sz), outline=A(OR, al), width=lw)
+
+
+def draw_icards(d, box, b, t, k):
+    """numbered cards with a small animated icon and a one-line caption (Zero Trust style)"""
+    items = b["items"]; n = len(items)
+    cols = b.get("cols", min(n, 3)) if WIDE else b.get("cols_reel", 2)
+    cells = _grid(box, n, cols, 30 if WIDE else 24, b.get("rtl", True))
+    last = max([i for i, it in enumerate(items) if t >= it["t"]], default=-1)
+    for i, (it, (x0, y0, x1, y1)) in enumerate(zip(items, cells)):
+        al = E(t, it["t"])
+        if al < 0.01: continue
+        dy = (1 - al) * 28; y0 += dy; y1 += dy; cw_ = x1 - x0; ch_ = y1 - y0
+        act = (i == last and t - it["t"] < 3.0); hl = 1 - ss(prog(t, it["t"], it["t"] + 1.5)) if act else 0
+        d.rounded_rectangle((x0, y0, x1, y1), 26, fill=A(CARDC, al), outline=A(lerp((60, 63, 72), OR, 1.0 if act else 0.0), al), width=4 if act else 3)
+        title = it["title"]; rtl = not title.isascii(); r = 26
+        bx = x1 - 28 - r if rtl else x0 + 28 + r; by = y0 + 28 + r
+        d.ellipse((bx - r, by - r, bx + r, by + r), outline=A(OR, al), width=4); d.text((bx, by), str(i + 1), font=F(MONO, 26), fill=A(OR, al), anchor="mm")
+        tw = cw_ - 2 * 28 - 2 * r - 20; ts = _fit(title, 34 if WIDE else 30, tw)
+        if rtl: d.text((bx - r - 16, by), title, font=F(ARB, ts), fill=A(OR, al), anchor="rm", direction="rtl", language="ar")
+        else: d.text((bx + r + 16, by), title, font=F(MONO, ts), fill=A(OR, al), anchor="lm")
+        ly = y0 + 28 + 2 * r + 22; d.line([(x0 + 28, ly), (x1 - 28, ly)], fill=A((60, 63, 72), al), width=2)
+        sz = min(cw_, ch_) * 0.2; q = prog(t, it["t"] + 0.1, it["t"] + 1.3)
+        draw_icon(d, it.get("icon", ""), (x0 + x1) / 2, (ly + y1 - 80) / 2 + 10, sz, q, al)
+        cap = it.get("caption", "")
+        if cap:
+            cs = _fit(cap, 34 if WIDE else 30, cw_ - 56); txt(d, ((x0 + x1) / 2, y1 - 50), cap, cs, A(GRAYC, al))
+
+
+def draw_steplist(d, box, b, t, k):
+    """index list of steps (current one orange) + terminal panel that shows the current step's commands"""
+    al = E(t, b["t"], 0.3)
+    if al < 0.01: return
+    items = b["items"]; n = len(items); x0, y0, x1, y1 = box; y0 += (1 - al) * 24; y1 += (1 - al) * 24
+    cur = max([i for i, it in enumerate(items) if t >= it["t"]], default=-1)
+    ih = 66 if WIDE else 62
+    if WIDE:
+        lw = 520; side = b.get("list_side", "right")
+        lbox = (x1 - lw, y0, x1, y1) if side == "right" else (x0, y0, x0 + lw, y1)
+        tbox = (x0, y0, x1 - lw - 36, y1) if side == "right" else (x0 + lw + 36, y0, x1, y1)
+        gap_ = min(12, (y1 - y0 - n * ih) / max(1, n - 1)); ih = min(ih, (y1 - y0 - gap_ * (n - 1)) / n)
+        pos = [(lbox[0], y0 + i * (ih + gap_), lbox[2], y0 + i * (ih + gap_) + ih) for i in range(n)]
+    else:
+        rows = -(-n // 2); lh = rows * (ih + 10); lbox = (x0, y0, x1, y0 + lh); tbox = (x0, y0 + lh + 24, x1, y1)
+        cw_ = (x1 - x0 - 12) / 2
+        pos = []
+        for i in range(n):
+            r_, c_ = divmod(i, 2); c_ = 1 - c_
+            pos.append((x0 + c_ * (cw_ + 12), y0 + r_ * (ih + 10), x0 + c_ * (cw_ + 12) + cw_, y0 + r_ * (ih + 10) + ih))
+    for i, (it, (bx0, by0, bx1, by1)) in enumerate(zip(items, pos)):
+        st = "act" if i == cur else ("past" if i < cur else "fut")
+        ia = al * (1.0 if st != "fut" else 0.75)
+        d.rounded_rectangle((bx0, by0, bx1, by1), 14, fill=A(OR if st == "act" else (22, 24, 29), ia), outline=None if st == "act" else A((60, 63, 72), ia), width=2)
+        name = it["name"]; col = INK if st == "act" else (PAPER if st == "past" else (110, 113, 122))
+        s_ = _fit(name, 30 if WIDE else 28, bx1 - bx0 - 110)
+        if name.isascii(): d.text((bx0 + 24, (by0 + by1) / 2), "%02d  %s" % (i + 1, name), font=F(MONO, s_), fill=A(col, ia), anchor="lm")
+        else:
+            d.text((bx0 + 24, (by0 + by1) / 2), "%02d" % (i + 1), font=F(MONO, s_), fill=A(col, ia), anchor="lm")
+            d.text((bx1 - 24, (by0 + by1) / 2), name, font=F(ARB, s_), fill=A(col, ia), anchor="rm", direction="rtl", language="ar")
+    # terminal
+    tx0, ty0, tx1, ty1 = tbox
+    d.rounded_rectangle((tx0, ty0, tx1, ty1), 18, fill=A((16, 17, 20), al), outline=A((60, 63, 72), al), width=2)
+    for j, c in enumerate([(255, 95, 86), (255, 189, 46), (39, 201, 63)]): d.ellipse((tx0 + 26 + j * 28, ty0 + 24, tx0 + 42 + j * 28, ty0 + 40), fill=A(c, al))
+    if cur < 0: return
+    it = items[cur]; d.text((tx0 + 150, ty0 + 32), it.get("file", it["name"]), font=F(MONO, 22), fill=A(GRAYC, al), anchor="lm")
+    d.line([(tx0, ty0 + 66), (tx1, ty0 + 66)], fill=A((60, 63, 72), al), width=2)
+    lines = it.get("lines", []); maxl = max([len(l[1]) for l in lines] + [1])
+    fs = max(18, min(30 if WIDE else 30, int((tx1 - tx0 - 70) / (0.6 * maxl)))); f = F(MONO, fs); lh = fs * 1.75
+    for j, ln in enumerate(lines):
+        ts = it["t"] + ln[0]; text = ln[1]; cps = ln[2] if len(ln) > 2 else 40; kind = ln[3] if len(ln) > 3 else ("cmd" if text.startswith("$") else "out")
+        m = min(len(text), int(max(0, t - ts) * cps))
+        if m <= 0: continue
+        yy = ty0 + 66 + 36 + j * lh + lh * 0.4
+        if kind == "bad":
+            d.rounded_rectangle((tx0 + 16, yy - lh * 0.45, tx1 - 16, yy + lh * 0.45), 8, fill=A(RED, 0.16 * al))
+        xx = tx0 + 36
+        for ci in range(m):
+            ch = text[ci]
+            col = (PAPER if ci > 0 else GRN) if kind == "cmd" and text.startswith("$") else {"cmd": PAPER, "out": GRAYC, "bad": RED, "ok": GRN}.get(kind, PAPER)
+            d.text((xx, yy), ch, font=f, fill=A(col, al), anchor="lm"); xx += f.getlength(ch)
+
+
+def draw_fixcards(d, box, b, t, k):
+    """problem -> chain of 3 chips -> fix line. The card being spoken glows."""
+    items = b["items"]; n = len(items)
+    cols = b.get("cols", (2 if n <= 4 else 3)) if WIDE else b.get("cols_reel", 1)
+    cells = _grid(box, n, cols, 30 if WIDE else 22, b.get("rtl", True))
+    last = max([i for i, it in enumerate(items) if t >= it["t"]], default=-1)
+    for i, (it, (x0, y0, x1, y1)) in enumerate(zip(items, cells)):
+        al = E(t, it["t"])
+        if al < 0.01: continue
+        dy = (1 - al) * 28; y0 += dy; y1 += dy; cw_ = x1 - x0; ch_ = y1 - y0
+        act = (i == last and t - it["t"] < 6.0)
+        if act:
+            g = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ImageDraw.Draw(g).rounded_rectangle((x0 - 4, y0 - 4, x1 + 4, y1 + 4), 30, outline=A(OR, 0.6 * al), width=10)
+            d._image.alpha_composite(g.filter(ImageFilter.GaussianBlur(8)))
+        d.rounded_rectangle((x0, y0, x1, y1), 26, fill=A(CARDC, al), outline=A(OR if act else (60, 63, 72), al), width=4 if act else 3)
+        title = it["title"]; rtl = not title.isascii(); pad = 30
+        ts = _fit(title, 36 if WIDE else 34, cw_ - 2 * pad - 70)
+        if rtl:
+            d.text((x1 - pad, y0 + 48), "%d." % (i + 1), font=F(MONO, ts), fill=A(OR, al), anchor="rm")
+            d.text((x1 - pad - 56, y0 + 48), title, font=F(ARB, ts), fill=A(PAPER, al), anchor="rm", direction="rtl", language="ar")
+        else:
+            d.text((x0 + pad, y0 + 48), "%d." % (i + 1), font=F(MONO, ts), fill=A(OR, al), anchor="lm")
+            d.text((x0 + pad + 56, y0 + 48), title, font=F(MONO, ts), fill=A(PAPER, al), anchor="lm")
+        if it.get("sub"): txt(d, ((x0 + x1) / 2, y0 + 100), it["sub"], 22, A(GRAYC, al))
+        chain = it.get("chain", []); cts = it.get("chain_t") or [it["t"] + 0.5 + 0.5 * j for j in range(len(chain))]
+        cols_ = [AMB, OR, RED]; m = len(chain)
+        if m:
+            gapc = 44; cwid = (cw_ - 2 * pad - gapc * (m - 1)) / m; cy = y0 + 100 + (ch_ - 100 - 120) * 0.5 + 44
+            order = list(range(m))[::-1] if b.get("rtl", True) and not title.isascii() else list(range(m))
+            for pos_, j in enumerate(order):
+                ca = E(t, cts[j], 0.3)
+                if ca < 0.01: continue
+                cx0 = x0 + pad + pos_ * (cwid + gapc); c_ = cols_[min(j, 2)] if m > 1 else OR
+                d.rounded_rectangle((cx0, cy - 34, cx0 + cwid, cy + 34 + (0)), 34, fill=A(c_, 0.12 * ca), outline=A(c_, ca), width=3)
+                txt_ = chain[j]; tsz = _fit(txt_, 24 if WIDE else 24, cwid - 28, lo=16)
+                txt(d, (cx0 + cwid / 2, cy), txt_, tsz, A(PAPER, ca))
+                if pos_ < m - 1 and ca > 0.5:
+                    for dd in (-6, 8): d.ellipse((cx0 + cwid + gapc / 2 + dd - 4, cy - 4, cx0 + cwid + gapc / 2 + dd + 4, cy + 4), fill=A(AMB, ca))
+        fx = it.get("fix"); fa = E(t, it.get("fix_t", it["t"] + 0.5 + 0.5 * m + 0.6), 0.3) if fx else 0
+        if fx and fa > 0.01:
+            fy = y1 - 48; fs = _fit(fx, 30 if WIDE else 28, cw_ - 2 * pad - 50, lo=18)
+            d.ellipse((x1 - pad - 30, fy - 15, x1 - pad, fy + 15), fill=A(GRN, 0.2 * fa), outline=A(GRN, fa), width=3); d.line([(x1 - pad - 22, fy), (x1 - pad - 16, fy + 6), (x1 - pad - 7, fy - 6)], fill=A(GRN, fa), width=3)
+            if fx.isascii(): d.text((x1 - pad - 44, fy), fx, font=F(MONO, fs), fill=A(PAPER, fa), anchor="rm")
+            else: d.text((x1 - pad - 44, fy), fx, font=F(ARB, fs), fill=A(PAPER, fa), anchor="rm", direction="rtl", language="ar")
+
+
+def _icards_h(b, w):
+    n = len(b["items"]); cols = b.get("cols", min(n, 3)) if WIDE else b.get("cols_reel", 2); rows = -(-n // cols)
+    return int(min(RY1 - RY0, (560 if rows == 1 else 720) if WIDE else rows * 440 + (rows - 1) * 24))
+def _steplist_h(b, w):
+    n = len(b["items"])
+    return int(min(RY1 - RY0, max(500, n * 78) if WIDE else (-(-n // 2)) * 72 + 24 + 620))
+def _fixcards_h(b, w):
+    n = len(b["items"]); cols = b.get("cols", (2 if n <= 4 else 3)) if WIDE else b.get("cols_reel", 1); rows = -(-n // cols)
+    return int(min(RY1 - RY0, (380 if rows == 1 else 720) if WIDE else rows * 400 + (rows - 1) * 22))
+EXTRA_H = {"icards": _icards_h, "steplist": _steplist_h, "fixcards": _fixcards_h}
+DRAW["icards"] = draw_icards; DRAW["steplist"] = draw_steplist; DRAW["fixcards"] = draw_fixcards
+
+
+# ---------------------------------------------------------------- versus / matrix / tabcard / icon3d (added 2026-10-31)
+import re as _re
+def _col(v, default=None):
+    """colour from (r,g,b) or '#RRGGBB'"""
+    if v is None: return default or OR
+    if isinstance(v, str):
+        v = v.lstrip("#"); return (int(v[0:2], 16), int(v[2:4], 16), int(v[4:6], 16))
+    return tuple(v)
+_TOK = _re.compile(r'("[^"]*"|<[^>]+>|\b\d+\b|^\s*[\w-]+(?=:)|[{}\[\]])')
+def _hl(line, col):
+    out = []; pos = 0
+    for m in _TOK.finditer(line):
+        if m.start() > pos: out.append((line[pos:m.start()], PAPER))
+        s = m.group(0)
+        if s[0] == '"': c = col if line[m.end():m.end() + 1] == ":" else (170, 235, 190)
+        elif s[0] == "<": c = col
+        elif s[0] in "{}[]": c = GRAYC
+        elif s.strip().isdigit(): c = (255, 176, 70)
+        else: c = col
+        out.append((s, c)); pos = m.end()
+    if pos < len(line): out.append((line[pos:], PAPER))
+    return out
+def _put(d, x, y, s, size, col, al, anchor="lm", maxw=None):
+    """one text (Latin = mono, otherwise Arabic RTL); anchor lm / rm / mm"""
+    if maxw: size = _fit(s, size, maxw, lo=12)
+    if s.isascii(): d.text((x, y), s, font=F(MONO, size), fill=A(col, al), anchor=anchor)
+    else: d.text((x, y), s, font=F(ARB, size), fill=A(col, al), anchor=anchor, direction="rtl", language="ar")
+
+def _mark(d, kind, cx, cy, r, col, al, q=1.0):
+    """check / cross / tilde symbol, q = draw progress"""
+    lw = max(4, int(r * 0.28))
+    if kind == "ok":
+        p = [(cx - 0.8 * r, cy + 0.05 * r), (cx - 0.25 * r, cy + 0.65 * r), (cx + 0.85 * r, cy - 0.6 * r)]
+        if q > 0.01: d.line(p[:2], fill=A(col, al), width=lw)
+        if q > 0.5: d.line(p[1:], fill=A(col, al), width=lw)
+        d.ellipse((p[0][0] - lw / 2, p[0][1] - lw / 2, p[0][0] + lw / 2, p[0][1] + lw / 2), fill=A(col, al))
+    elif kind == "bad":
+        s = 0.7 * r
+        d.line([(cx - s, cy - s), (cx + s, cy + s)], fill=A(col, al), width=lw); d.line([(cx + s, cy - s), (cx - s, cy + s)], fill=A(col, al), width=lw)
+    else:
+        pts = [(cx - 0.8 * r + i * 0.1 * r, cy + 0.25 * r * math.sin(i * 0.9 * math.pi / 8 * 2) * (-1)) for i in range(17)]
+        d.line(pts, fill=A(col, al), width=lw, joint="curve")
+
+def _vs_icon(d, kind, cx, cy, r, col, al):
+    d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=A(CARDC, al), outline=A(col, al), width=5)
+    if kind == "doc":
+        d.rounded_rectangle((cx - 0.4 * r, cy - 0.55 * r, cx + 0.4 * r, cy + 0.55 * r), 6, outline=A(col, al), width=4)
+        for i in range(3): d.line([(cx - 0.22 * r, cy - 0.22 * r + i * 0.26 * r), (cx + 0.22 * r, cy - 0.22 * r + i * 0.26 * r)], fill=A(col, al), width=3)
+    else: d.text((cx, cy), kind, font=F(MONO, int(r * 0.85)), fill=A(col, al), anchor="mm")
+
+def draw_versus(d, box, b, t, k):
+    """2-3 columns, each with its own colour: name, sub, code sample, bullets (appear one by one), icon"""
+    cols = b["cols"]; n = len(cols); x0, y0, x1, y1 = box
+    if WIDE: cells = _grid(box, n, n, 28, False)
+    else: cells = _grid(box, n, 1, 22, False)
+    for i, (c, (cx0, cy0, cx1, cy1)) in enumerate(zip(cols, cells)):
+        al = E(t, c["t"])
+        if al < 0.01: continue
+        col = _col(c.get("color")); cy0 += (1 - al) * 30; cy1 += (1 - al) * 30; cw_ = cx1 - cx0; ch_ = cy1 - cy0; pad = 26
+        g = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ImageDraw.Draw(g).rounded_rectangle((cx0, cy0, cx1, cy1), 30, outline=A(col, 0.55 * al), width=8)
+        d._image.alpha_composite(g.filter(ImageFilter.GaussianBlur(10)))
+        d.rounded_rectangle((cx0, cy0, cx1, cy1), 30, fill=A(lerp(CARDC, col, 0.07), al), outline=A(col, al), width=4)
+        d.line([(cx0 + cw_ * 0.3, cy0 + 2), (cx1 - cw_ * 0.3, cy0 + 2)], fill=A(col, al), width=7)
+        nm = c["name"]; ns = _fit(nm, 76 if WIDE else 60, cw_ * (1 - (0.45 if not WIDE else 0)) - 2 * pad, lo=28)
+        if WIDE:
+            _put(d, (cx0 + cx1) / 2, cy0 + 70, nm, ns, col, al, "mm")
+            if c.get("sub"): _put(d, (cx0 + cx1) / 2, cy0 + 122, c["sub"], 24, GRAYC, al, "mm", cw_ - 2 * pad)
+            by0 = cy0 + 160; code_h = 40 + 44 * len(c.get("code", [])) if c.get("code") else 0
+            if c.get("code"):
+                d.rounded_rectangle((cx0 + pad, by0, cx1 - pad, by0 + code_h), 18, fill=A((10, 11, 14), al), outline=A(col, al), width=3)
+                ca = E(t, c.get("code_t", c["t"] + 0.3))
+                for li, ln in enumerate(c["code"]):
+                    xx = cx0 + pad + 22; yy = by0 + 36 + li * 44; fs = 28
+                    for seg, sc in _hl(ln, col):
+                        f = F(MONO, fs); d.text((xx, yy), seg, font=f, fill=A(sc, al * ca), anchor="lm"); xx += f.getlength(seg)
+            ly = by0 + code_h + 44; step = min(56, (cy1 - 110 - ly) / max(1, len(c.get("bullets", [])))) if c.get("bullets") else 0
+            for bi, bl in enumerate(c.get("bullets", [])):
+                bt, btxt = bl if isinstance(bl, (tuple, list)) else (c["t"] + 0.6 + 0.5 * bi, bl); ba = E(t, bt)
+                if ba < 0.01: continue
+                yy = ly + bi * step
+                d.ellipse((cx0 + pad + 4, yy - 9 + (1 - ba) * 10, cx0 + pad + 22, yy + 9 + (1 - ba) * 10), fill=A(col, ba))
+                _put(d, cx0 + pad + 40, yy + (1 - ba) * 10, btxt, 28, PAPER, ba, "lm", cw_ - 2 * pad - 44)
+            if c.get("icon"): _vs_icon(d, c["icon"], (cx0 + cx1) / 2, cy1 - 52, 40, col, al)
+        else:
+            _put(d, cx1 - pad, cy0 + 56, nm, ns, col, al, "rm")
+            if c.get("sub"): _put(d, cx0 + pad, cy0 + 56, c["sub"], 20, GRAYC, al, "lm", cw_ * 0.4)
+            bx0 = cx0 + pad; by0 = cy0 + 100; split = cw_ * 0.46
+            if c.get("code"):
+                code_h = 28 + 40 * len(c["code"])
+                d.rounded_rectangle((bx0, by0, bx0 + split, by0 + code_h), 16, fill=A((10, 11, 14), al), outline=A(col, al), width=3)
+                ca = E(t, c.get("code_t", c["t"] + 0.3))
+                for li, ln in enumerate(c["code"]):
+                    xx = bx0 + 16; yy = by0 + 34 + li * 40; fs = _fit(max(c["code"], key=len), 22, split - 30, lo=14)
+                    for seg, sc in _hl(ln, col):
+                        f = F(MONO, fs); d.text((xx, yy), seg, font=f, fill=A(sc, al * ca), anchor="lm"); xx += f.getlength(seg)
+            bl_x = bx0 + split + 26; nb = len(c.get("bullets", [])); step = min(50, (ch_ - 120) / max(1, nb)) if nb else 0
+            for bi, bl in enumerate(c.get("bullets", [])):
+                bt, btxt = bl if isinstance(bl, (tuple, list)) else (c["t"] + 0.6 + 0.5 * bi, bl); ba = E(t, bt)
+                if ba < 0.01: continue
+                yy = by0 + 20 + bi * step
+                d.ellipse((bl_x, yy - 7, bl_x + 14, yy + 7), fill=A(col, ba)); _put(d, bl_x + 28, yy, btxt, 24, PAPER, ba, "lm", cx1 - pad - bl_x - 30)
+
+def draw_matrix(d, box, b, t, k):
+    """comparison table: header (coloured names) + rows; cell = 'ok' | 'bad' | 'mid' | text | (kind, note)"""
+    heads = b["cols"]; rows = b["rows"]; x0, y0, x1, y1 = box; n = len(heads); W_ = x1 - x0
+    ha = E(t, b["t"])
+    if ha < 0.01: return
+    hh = 88 if WIDE else 84; rh = 74 if WIDE else 82; lw_ = W_ * (0.30 if WIDE else 0.34); cwid = (W_ - lw_) / n
+    th = hh + rh * len(rows) + 16
+    d.rounded_rectangle((x0, y0, x1, y0 + th), 28, fill=A(CARDC, ha), outline=A((70, 73, 82), ha), width=3)
+    _put(d, x1 - 30 if not b.get("ltr") else x0 + 30, y0 + hh / 2, b.get("title", ""), 30, PAPER, ha, "rm" if not b.get("ltr") else "lm") if b.get("title") else None
+    for j, h in enumerate(heads):
+        hx = x0 + lw_ + j * cwid; col = _col(h.get("color")); ca = E(t, h.get("t", b["t"] + 0.2 + 0.15 * j))
+        if ca < 0.01: continue
+        d.line([(hx + 14, y0 + hh - 4), (hx + cwid - 14, y0 + hh - 4)], fill=A(col, ca), width=5)
+        _put(d, hx + cwid / 2, y0 + hh / 2 - 4, h["name"], 40 if WIDE else 34, col, ca, "mm", cwid - 20)
+    last = max([i for i, r in enumerate(rows) if t >= r["t"]], default=-1)
+    for i, r in enumerate(rows):
+        ra = E(t, r["t"])
+        if ra < 0.01: continue
+        ry = y0 + hh + i * rh + (1 - ra) * 14
+        if i == last and t - r["t"] < 3.0: d.rounded_rectangle((x0 + 10, ry + 4, x1 - 10, ry + rh - 4), 16, outline=A(OR, ra * 0.9), width=3)
+        d.line([(x0 + 18, ry), (x1 - 18, ry)], fill=A((55, 58, 66), ra), width=2)
+        _put(d, x0 + 34, ry + rh / 2, r["label"], 30 if WIDE else 27, PAPER, ra, "lm", lw_ - 40)
+        for j, cell in enumerate(r["cells"]):
+            q = prog(t, r["t"] + 0.15 * (j + 1), r["t"] + 0.15 * (j + 1) + 0.35)
+            if q <= 0: continue
+            kind, note = (cell if isinstance(cell, (tuple, list)) else (cell, None)); cx = x0 + lw_ + j * cwid + cwid / 2; cy = ry + rh / 2; col = _col(heads[j].get("color"))
+            sym = {"ok": GRN, "bad": RED, "mid": AMB}.get(kind)
+            if sym:
+                off = -cwid * 0.17 if note else 0
+                if kind == "mid" and not note: d.text((cx + off, cy), "~", font=F(MONO, 44), fill=A(sym, ra * ss(q)), anchor="mm")
+                elif kind == "mid": d.text((cx + off, cy), "~", font=F(MONO, 40), fill=A(sym, ra * ss(q)), anchor="mm")
+                else: _mark(d, kind, cx + off, cy, (17 if WIDE else 18) * (0.6 + 0.4 * ss(q)), sym, ra * ss(q), q)
+                if note: _put(d, cx + cwid * 0.02, cy, note, 24 if WIDE else 20, col, ra * ss(q), "lm", cwid * 0.5)
+            else: _put(d, cx, cy, str(kind), 30 if WIDE else 27, col, ra * ss(q), "mm", cwid - 24)
+
+def draw_icon3d(d, kind, cx, cy, sz, al, t=0.0, tilt=True):
+    """flat tile with extruded depth edge, soft shadow, gentle bobbing + tilt. kinds: play camera scissors code doc db"""
+    pk = {"play": ((255, 84, 66), (214, 52, 38)), "camera": ((250, 240, 228), (205, 190, 172)), "scissors": ((250, 240, 228), (205, 190, 172)),
+          "code": (OR, ORD), "doc": ((250, 240, 228), (205, 190, 172)), "db": (OR, ORD)}.get(kind, ((250, 240, 228), (205, 190, 172)))
+    face, edge = pk; bob = math.sin(t * 2.2) * sz * 0.05; ang = math.sin(t * 1.3) * 5 if tilt else 0
+    S = int(sz * 3.2); L = Image.new("RGBA", (S, S), (0, 0, 0, 0)); ld = ImageDraw.Draw(L); c = S / 2
+    w = sz * (1.45 if kind == "play" else 1.2); h = sz * (1.0 if kind == "play" else 1.2); r = int(sz * 0.3)
+    for e in range(int(sz * 0.14), 0, -1): ld.rounded_rectangle((c - w / 2 + e * 0.5, c - h / 2 + e, c + w / 2 + e * 0.5, c + h / 2 + e), r, fill=edge + (255,))
+    ld.rounded_rectangle((c - w / 2, c - h / 2, c + w / 2, c + h / 2), r, fill=face + (255,))
+    ink = (255, 255, 255, 255) if kind == "play" else (255, 138, 17, 255) if kind != "code" else (10, 11, 13, 255)
+    if kind == "play": ld.polygon([(c - 0.17 * sz, c - 0.3 * sz), (c - 0.17 * sz, c + 0.3 * sz), (c + 0.33 * sz, c)], fill=ink)
+    elif kind == "camera":
+        ld.rounded_rectangle((c - 0.42 * sz, c - 0.25 * sz, c + 0.1 * sz, c + 0.25 * sz), int(sz * 0.1), fill=ink); ld.polygon([(c + 0.16 * sz, c - 0.08 * sz), (c + 0.42 * sz, c - 0.2 * sz), (c + 0.42 * sz, c + 0.2 * sz), (c + 0.16 * sz, c + 0.08 * sz)], fill=ink)
+    elif kind == "scissors":
+        for sgn in (-1, 1): ld.ellipse((c - 0.38 * sz, c + sgn * 0.3 * sz - 0.12 * sz, c - 0.14 * sz, c + sgn * 0.3 * sz + 0.12 * sz), outline=ink, width=max(3, int(sz * 0.06))); ld.line([(c - 0.2 * sz, c + sgn * 0.22 * sz), (c + 0.4 * sz, c - sgn * 0.2 * sz)], fill=ink, width=max(3, int(sz * 0.07)))
+    elif kind == "code": ld.text((c, c), "</>", font=F(MONO, int(sz * 0.5)), fill=ink, anchor="mm")
+    elif kind == "doc":
+        for i in range(4): ld.line([(c - 0.3 * sz, c - 0.33 * sz + i * 0.22 * sz), (c + 0.3 * sz - (0.2 * sz if i == 3 else 0), c - 0.33 * sz + i * 0.22 * sz)], fill=ink, width=max(3, int(sz * 0.07)))
+    elif kind == "db":
+        for i in range(3): ld.ellipse((c - 0.4 * sz, c - 0.4 * sz + i * 0.3 * sz, c + 0.4 * sz, c - 0.1 * sz + i * 0.3 * sz), outline=(10, 11, 13, 255), width=max(3, int(sz * 0.06)))
+    L = L.rotate(ang, resample=Image.BICUBIC)
+    if al < 0.999: L.putalpha(L.getchannel("A").point(lambda v: int(v * al)))
+    sh = Image.new("RGBA", (W, H), (0, 0, 0, 0)); sc_ = 1 - 0.1 * math.sin(t * 2.2)
+    ImageDraw.Draw(sh).ellipse((cx - sz * 0.55 * sc_, cy + sz * 0.78, cx + sz * 0.55 * sc_, cy + sz * 0.92), fill=(0, 0, 0, int(110 * al)))
+    d._image.alpha_composite(sh.filter(ImageFilter.GaussianBlur(10)))
+    px, py = int(cx - S / 2), int(cy + bob - S / 2)
+    sx0, sy0 = max(0, -px), max(0, -py); L2 = L.crop((sx0, sy0, min(S, W - px), min(S, H - py)))
+    if L2.size[0] > 0 and L2.size[1] > 0: d._image.alpha_composite(L2, (px + sx0, py + sy0))
+
+def _cursor(d, x, y, al):
+    d.polygon([(x, y), (x + 10, y + 66), (x + 27, y + 48), (x + 50, y + 76), (x + 65, y + 62), (x + 42, y + 36), (x + 66, y + 30)], fill=A(PAPER, al), outline=A(INK, al))
+
+def _tab_scene(d, kind, box, tl, al):
+    x0, y0, x1, y1 = box; cx = (x0 + x1) / 2; cy = (y0 + y1) / 2; w_ = x1 - x0; h_ = y1 - y0
+    if kind == "play":
+        draw_icon3d(d, "play", cx, cy - h_ * 0.05, min(w_, h_) * 0.3, al, tl)
+        yb = y1 - h_ * 0.14; xa, xb = x0 + w_ * 0.08, x1 - w_ * 0.08; p = (tl * 0.12) % 1.0
+        d.rounded_rectangle((xa, yb - 6, xb, yb + 6), 6, fill=A((60, 63, 72), al)); d.rounded_rectangle((xa, yb - 6, xa + (xb - xa) * (0.1 + 0.8 * p), yb + 6), 6, fill=A((255, 40, 20), al))
+        px = xa + (xb - xa) * (0.1 + 0.8 * p); d.ellipse((px - 16, yb - 16, px + 16, yb + 16), fill=A((255, 40, 20), al))
+    elif kind == "rec":
+        m = min(w_, h_) * 0.08; L = min(w_, h_) * 0.12
+        for gx in (1, 2): d.line([(x0 + w_ * gx / 3, y0 + m), (x0 + w_ * gx / 3, y1 - m)], fill=A((50, 53, 62), al), width=2); d.line([(x0 + m, y0 + h_ * gx / 3), (x1 - m, y0 + h_ * gx / 3)], fill=A((50, 53, 62), al), width=2)
+        for sx, sy in ((x0 + m, y0 + m), (x1 - m, y0 + m), (x0 + m, y1 - m), (x1 - m, y1 - m)):
+            dx = L if sx < cx else -L; dy = L if sy < cy else -L
+            d.line([(sx, sy), (sx + dx, sy)], fill=A(PAPER, al), width=5); d.line([(sx, sy), (sx, sy + dy)], fill=A(PAPER, al), width=5)
+        blink = 0.5 + 0.5 * math.sin(tl * 6); d.ellipse((x0 + m + 26, y0 + m + 30, x0 + m + 46, y0 + m + 50), fill=A(RED, al * (0.5 + 0.5 * blink))); d.text((x0 + m + 62, y0 + m + 40), "REC", font=F(MONO, 28), fill=A(PAPER, al), anchor="lm")
+        d.text((x1 - m - 26, y0 + m + 40), "00:00:%02d" % (int(tl) + 1), font=F(MONO, 26), fill=A(PAPER, al), anchor="rm")
+        draw_icon3d(d, "camera", cx, cy, min(w_, h_) * 0.26, al, tl)
+    elif kind == "edit":
+        tr = [(0.20, [(0.05, 0.38, OR), (0.45, 0.30, (120, 130, 150))]), (0.38, [(0.12, 0.30, (120, 130, 150)), (0.46, 0.40, OR)]), (0.56, [(0.02, 0.22, OR), (0.28, 0.34, (120, 130, 150)), (0.66, 0.24, OR)])]
+        base = y0 + h_ * 0.5
+        for ti, (oy, clips) in enumerate(tr):
+            yy = base + (oy - 0.25) * h_ * 0.8
+            for cs, cw, cc in clips: d.rounded_rectangle((x0 + w_ * (0.06 + cs * 0.88), yy, x0 + w_ * (0.06 + (cs + cw) * 0.88), yy + h_ * 0.09), 10, fill=A(cc, al * 0.9))
+        ph = x0 + w_ * (0.06 + 0.88 * ((tl * 0.15) % 1.0)); d.line([(ph, base - h_ * 0.2), (ph, y1 - h_ * 0.06)], fill=A(RED, al), width=4); d.polygon([(ph - 12, base - h_ * 0.2), (ph + 12, base - h_ * 0.2), (ph, base - h_ * 0.2 + 18)], fill=A(RED, al))
+        draw_icon3d(d, "scissors", cx, y0 + h_ * 0.2, min(w_, h_) * 0.2, al, tl)
+    elif kind == "script":
+        for i in range(7):
+            ln = (0.5, 0.8, 0.65, 0.9, 0.4, 0.75, 0.55)[i]; q = prog(tl, 0.2 + i * 0.35, 0.5 + i * 0.35)
+            d.rounded_rectangle((x0 + w_ * 0.12, y0 + h_ * (0.18 + i * 0.1), x0 + w_ * (0.12 + 0.76 * ln * q), y0 + h_ * (0.18 + i * 0.1) + 22), 11, fill=A(OR if i in (0, 3) else (90, 94, 106), al))
+    else: draw_icon3d(d, kind, cx, cy, min(w_, h_) * 0.3, al, tl)
+
+def draw_tabcard(d, box, b, t, k):
+    """one card, a row of tabs, a cursor that presses each tab, and a small animated scene inside per tab"""
+    x0, y0, x1, y1 = box; ba = E(t, b["t"])
+    if ba < 0.01: return
+    cw_ = min(x1 - x0, 860 if WIDE else 940); ch_ = min(y1 - y0, 800 if WIDE else 1160); cx0 = (x0 + x1) / 2 - cw_ / 2; cy0 = y0 + (1 - ba) * 30
+    cx1 = cx0 + cw_; cy1 = cy0 + ch_; pad = 26; tabs = b["tabs"]; n = len(tabs)
+    g = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ImageDraw.Draw(g).rounded_rectangle((cx0 + 8, cy0 + 24, cx1 + 8, cy1 + 24), 36, fill=(0, 0, 0, int(150 * ba)))
+    d._image.alpha_composite(g.filter(ImageFilter.GaussianBlur(18)))
+    d.rounded_rectangle((cx0, cy0, cx1, cy1), 34, fill=A((22, 24, 30), ba), outline=A((60, 63, 72), ba), width=3)
+    ty = cy0 + 54
+    if b.get("title"): _put(d, cx1 - pad - 84, ty, b["title"], 36, PAPER, ba, "rm")
+    d.rounded_rectangle((cx1 - pad - 70, ty - 24, cx1 - pad, ty + 24), 12, fill=A((255, 40, 20), ba)); d.polygon([(cx1 - pad - 41, ty - 11), (cx1 - pad - 41, ty + 11), (cx1 - pad - 22, ty)], fill=A(PAPER, ba))
+    trow = ty + 70; tw = (cw_ - 2 * pad - 14 * (n - 1)) / n; th = 62
+    act = max([i for i, tb in enumerate(tabs) if t >= tb["t"]], default=-1)
+    pos = []
+    for i, tb in enumerate(tabs):
+        px0 = cx1 - pad - (i + 1) * tw - i * 14 if b.get("rtl", True) else cx0 + pad + i * (tw + 14); pos.append((px0, px0 + tw))
+        on = (i == act); q = ss(prog(t, tb["t"], tb["t"] + 0.25)) if on else 0
+        d.rounded_rectangle((px0, trow, px0 + tw, trow + th), 16, fill=A(lerp((38, 41, 49), (80, 48, 20), q), ba), outline=A(lerp((38, 41, 49), OR, q), ba), width=3)
+        _put(d, px0 + tw / 2, trow + th / 2, tb["label"], 30, lerp(GRAYC, OR, q) if on else GRAYC, ba, "mm", tw - 20)
+    d.line([(cx0 + 2, trow + th + 18), (cx1 - 2, trow + th + 18)], fill=A((45, 48, 56), ba), width=2)
+    area = (cx0 + pad, trow + th + 36, cx1 - pad, cy1 - pad)
+    for i, tb in enumerate(tabs):
+        if i < max(act, 0) - 1 and act >= 0 or (act < 0 and i > 0): continue
+        if act < 0: q = 1.0 if i == 0 else 0.0
+        else: q = ss(prog(t, tb["t"], tb["t"] + 0.4)) if i == act else (1 - ss(prog(t, tabs[i + 1]["t"], tabs[i + 1]["t"] + 0.3)) if i + 1 < n and i + 1 <= act else 1.0 if i == act else 0.0)
+        if i == act and act > 0: q = ss(prog(t, tb["t"], tb["t"] + 0.4))
+        if i == act - 1: q = 1 - ss(prog(t, tabs[act]["t"], tabs[act]["t"] + 0.35))
+        if q < 0.01: continue
+        _tab_scene(d, tb.get("scene", "play"), area, t - tb["t"] if t >= tb["t"] else t - b["t"], ba * q)
+    # cursor: travels to the next tab, presses at its time
+    nxt = next((i for i, tb in enumerate(tabs) if t < tb["t"] + 0.55), None)
+    if nxt is not None:
+        tb = tabs[nxt]; tx = (pos[nxt][0] + pos[nxt][1]) / 2 + 20; tyy = trow + th * 0.65
+        prev = (pos[nxt - 1][0] + pos[nxt - 1][1]) / 2 + 20 if nxt > 0 else tx + 200
+        q = ss(prog(t, tb["t"] - 1.0, tb["t"] - 0.1)); px = prev + (tx - prev) * q; py = (tyy + (260 if nxt == 0 else 0) * (1 - q)) + (0 if nxt else 0)
+        al_ = ba * (ss(prog(t, tb["t"] - 1.3, tb["t"] - 0.9)) if nxt == 0 else 1) * (1 - ss(prog(t, tb["t"] + 0.2, tb["t"] + 0.55)))
+        rp = prog(t, tb["t"], tb["t"] + 0.6)
+        if 0 < rp < 1:
+            for r_ in (30 + 70 * rp, 14 + 44 * rp): d.ellipse((tx - r_, tyy - r_, tx + r_, tyy + r_), outline=A(OR, (1 - rp) * 0.8 * ba), width=4)
+        if al_ > 0.02: _cursor(d, px, py, al_)
+
+def draw_icon3d_row(d, box, b, t, k):
+    items = b["items"]; n = len(items); x0, y0, x1, y1 = box
+    cols = n if WIDE else b.get("cols_reel", 3); cells = _grid(box, n, cols, 10, False)
+    for i, (it, (a0, b0, a1, b1)) in enumerate(zip(items, cells)):
+        al = E(t, it["t"])
+        if al < 0.01: continue
+        cw_ = a1 - a0; cx = (a0 + a1) / 2; sz = min(cw_ * 0.34, (b1 - b0) * 0.3, 190); cyy = (b0 + b1) / 2 - 20 + (1 - al) * 40
+        draw_icon3d(d, it["kind"], cx, cyy, sz, al, t + i)
+        if it.get("label"): _put(d, cx, cyy + sz * 0.95 + 24, it["label"], 32, PAPER, al, "mm", cw_ - 20)
+
+def _versus_h(b, w):
+    n = len(b["cols"])
+    return int(min(RY1 - RY0, b.get("h", 700)) if WIDE else min(RY1 - RY0, n * 440 + (n - 1) * 22))
+def _matrix_h(b, w):
+    return int(88 + (74 if WIDE else 82) * len(b["rows"]) + 16) if WIDE else int(84 + 82 * len(b["rows"]) + 16)
+def _tabcard_h(b, w): return int(min(RY1 - RY0, 800 if WIDE else 1160))
+def _icon3d_h(b, w): return int(min(RY1 - RY0, 420)) if WIDE else int(min(RY1 - RY0, -(-len(b["items"]) // b.get("cols_reel", 3)) * 330))
+EXTRA_H.update({"versus": _versus_h, "matrix": _matrix_h, "tabcard": _tabcard_h, "icon3d": _icon3d_h})
+DRAW["versus"] = draw_versus; DRAW["matrix"] = draw_matrix; DRAW["tabcard"] = draw_tabcard; DRAW["icon3d"] = draw_icon3d_row
+
+
 class Video:
     def __init__(self, scenes, stages, dur, t_end, tag1, tag2, tech):
         self.scenes, self.stages, self.dur, self.t_end, self.tag1, self.tag2 = scenes, stages, dur, t_end, tag1, tag2
@@ -1036,8 +1522,9 @@ class Video:
                                 nb_.append({"k": "row", "split": 0.5, "items": ch_} if len(ch_) == 2 else ch_[0])
                     else: nb_.append(it_)
                 s_["blocks"] = nb_
-        for s_ in scenes:
+        for si_, s_ in enumerate(scenes):
             st_ = s_.get("style", "classic"); n_ = 0
+            if st_ not in CARD_STYLES: st_ = CARD_STYLES[si_ % len(CARD_STYLES)]   # style not allowed by CTRLH_CARD_STYLES: rotate through the allowed ones
             def tag_(bl):
                 nonlocal n_
                 for b_ in bl:

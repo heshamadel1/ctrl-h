@@ -138,6 +138,37 @@ for s_ in RP.SC:
         elif k_ == "flow":
             for st in b["steps"]:
                 add(whoosh(0.35, 900, 5200, up=True), st[0], 0.045, -0.2); add(click(1800, 1.0, 0.05, 0.006), st[0] + 0.85, 0.07, 0.2)
+        elif k_ == "icards":
+            for it_ in b["items"]:
+                add(pluck([660.0, 784.0, 880.0, 988.0, 1046.5][j % 5], 0.4, 1.0), it_["t"], 0.05, [-0.3, 0.0, 0.3][j % 3]); add(click(2800, 0.8, 0.04), it_["t"], 0.05); add(whoosh(0.3, 800, 3500, up=True), it_["t"] + 0.1, 0.025); j += 1
+        elif k_ == "steplist":
+            for it_ in b["items"]:
+                add(click(1800, 1.0, 0.05, 0.006), it_["t"], 0.09); add(pluck(880.0, 0.25, 1.0), it_["t"] + 0.02, 0.04)
+                for ln_ in it_.get("lines", []):
+                    if len(ln_) > 3 and ln_[3] in ("bad", "ok"): add(note(1318.5, 0.14, 1.0) if ln_[3] == "ok" else np.sin(2 * np.pi * 140 * np.arange(int(0.25 * SR)) / SR) * np.exp(-np.arange(int(0.25 * SR)) / SR / 0.08), it_["t"] + ln_[0] + 0.1, 0.05)
+        elif k_ == "fixcards":
+            for it_ in b["items"]:
+                add(pluck([660.0, 784.0, 880.0, 988.0, 1046.5][j % 5], 0.4, 1.0), it_["t"], 0.05); j += 1
+                m_ = len(it_.get("chain", [])); cts_ = it_.get("chain_t") or [it_["t"] + 0.5 + 0.5 * q for q in range(m_)]
+                for ct_ in cts_: add(click(2200, 1.0, 0.04), ct_, 0.07)
+                if it_.get("fix"): ding(it_.get("fix_t", it_["t"] + 0.5 + 0.5 * m_ + 0.6), 0.05)
+        elif k_ == "versus":
+            for c_ in b["cols"]:
+                add(pluck(660.0, 0.4, 1.0), c_["t"], 0.05, -0.2); add(whoosh(0.3, 800, 3500, up=True), c_["t"], 0.03)
+                for bl_ in c_.get("bullets", []):
+                    if isinstance(bl_, (tuple, list)): add(click(2400, 1.0, 0.04), bl_[0], 0.06)
+        elif k_ == "matrix":
+            for r_ in b["rows"]:
+                add(click(1800, 1.0, 0.05, 0.006), r_["t"], 0.07)
+                for j_, c_ in enumerate(r_["cells"]):
+                    kd_ = c_[0] if isinstance(c_, (tuple, list)) else c_
+                    if kd_ == "ok": add(note(1318.5, 0.12, 1.0), r_["t"] + 0.15 * (j_ + 1), 0.04, 0.2)
+                    elif kd_ == "bad": add(np.sin(2 * np.pi * 150 * np.arange(int(0.2 * SR)) / SR) * np.exp(-np.arange(int(0.2 * SR)) / SR / 0.07), r_["t"] + 0.15 * (j_ + 1), 0.04)
+        elif k_ == "tabcard":
+            add(whoosh(0.3, 700, 3500, up=True), b["t"], 0.04)
+            for tb_ in b["tabs"]: add(click(2200, 1.0, 0.04), tb_["t"], 0.12); add(pluck(988.0, 0.3, 1.0), tb_["t"] + 0.1, 0.05)
+        elif k_ == "icon3d":
+            for it_ in b["items"]: add(pluck(784.0, 0.4, 1.0), it_["t"], 0.05); add(click(2800, 0.8, 0.04), it_["t"], 0.05)
         elif k_ == "button":
             tp = b["t0"] + 1.5
             add(whoosh(0.3, 700, 4000, up=True), b["t0"], 0.05); add(click(2200, 1.0, 0.04), tp, 0.12); ding(tp + 0.12, 0.07)

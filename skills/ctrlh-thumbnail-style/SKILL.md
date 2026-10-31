@@ -8,16 +8,14 @@ description: "Use when delivering any Ctrl + H video: also make its YouTube thum
 Owner: Hesham (Egyptian Arabic). Decided 2026-10-27: every video is delivered together with its thumbnail. Send the PNG with SendUserFile right after the video (one file per thumbnail, short caption). Reply in Egyptian Arabic.
 
 ## Look (approved reference, do not redesign)
-
 - Base plate = the reference image he sent (thumb_ref.png, 1672x941: dark desk, blurred shelves, black mug with the C+H logo on the left, laptop with code on the right, official CTRL + H logo top-left, orange diagonal corner stripes, row of 5 icons FRONTEND / BACKEND / DATABASES / DEVOPS / GIT & GITHUB at the bottom). Keep a copy named thumb_ref.png in the work folder; if missing, ask him to re-send it. Never redraw the logo.
 - Wipe the middle text area of the plate (rect x 290-1215 y 110-575 plus x 290-1120 y 540-730, feathered with GaussianBlur 18) with a dark charcoal plate (9,9,11) + soft warm glow + light noise, keeping mug, laptop, logo, corner stripes and the icon row.
 - Headline = 2 lines of Egyptian Arabic, short (2-4 words each): line 1 black Cairo SemiBold (stroke 5) on an orange (#FF8A11) dry-brush shape at (760,255) size 830x190; line 2 big white Cairo SemiBold with black outline and soft shadow at y 450, orange tapered underline below it. Below: the topic keyword in Fira Code SemiBold orange (English, e.g. Laravel Queues) at y 628, then the spaced tagline THINK DEEPER. BUILD SMARTER. at y 690.
-- Output 1280x720 PNG (resize from 1672x941 with LANCZOS), named <topic>\_thumb.png; also zip a batch.
+- Output 1280x720 PNG (resize from 1672x941 with LANCZOS), named <topic>_thumb.png; also zip a batch.
 - Hook wording: Egyptian Arabic, a question or a punch (e.g. "الفلوس اتخصمت / والأوردر ضاع؟", "Git / مش GitHub!"). Mixed Arabic+Latin is fine with Cairo; an exclamation after Latin appears on the left in RTL, that is correct.
 - No AI image generation here: the photo plate stays the same for every thumbnail. If he sends other photos, composite them the same way.
 
 ## Generator (thumbs2.py)
-
 Fonts: Cairo-SemiBold.ttf and FiraCode-SemiBold.ttf (he uploaded both). Load with ImageFont.truetype(path, size, layout_engine=ImageFont.Layout.RAQM); Arabic text: direction="rtl", language="ar".
 
 ```python
@@ -76,7 +74,6 @@ for name, kw, l1, l2 in T:
 ```
 
 ## Checklist
-
 1. Pick the 2-line hook and the English keyword from the post (same wording as the video hook, shorter).
 2. Render, view the PNG once (no leftovers of the original text, text inside the brush, nothing cut off), then deliver it right after the video.
 3. Hook line 1 max about 20 characters, line 2 max about 22; the generator shrinks fonts to fit.
