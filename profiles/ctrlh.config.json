@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "channel_name": "Ctrl + H",
+  "handle": "ctrlh-dev",
+  "platforms": ["YouTube", "TikTok", "Instagram", "Facebook"],
+  "language": "Egyptian Arabic (technical terms in English)",
+  "topics": ["Programming", "Software Engineering", "Back-End Development"],
+  "theme": "orange",
+  "card_styles": "all",
+  "bg_style": "circuit",
+  "signoff_1": "Think Deeper.",
+  "signoff_2": "Build Smarter."
+}

@@ -3,6 +3,10 @@ import os, re, sys, math, subprocess
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import ctrlh_config   # loads ctrlh.config.json (if any) into the CTRLH_* variables below
+import themes
+_T = themes.THEMES.get(os.environ.get("CTRLH_THEME", "").lower(), themes.THEMES[themes.DEFAULT])
 SD = os.environ.get("CTRLH_ASSETS", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")) + "/"
 FMT = os.environ.get("FMT", "wide")
 WIDE = FMT == "wide"
@@ -11,13 +15,13 @@ FPS = 30
 def _hex(h, d):
     h = os.environ.get(h, "").lstrip("#")
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) if len(h) == 6 else d
-OR = _hex("CTRLH_ACCENT", (255, 138, 17))   # accent colour, e.g. CTRLH_ACCENT=#00B8D9
+OR = _hex("CTRLH_ACCENT", _T["accent"])   # accent colour, e.g. CTRLH_ACCENT=#00B8D9
 OR2 = tuple(min(255, int(c + (255 - c) * 0.2)) for c in OR)   # lighter accent
 ORD = tuple(int(c * 0.67) for c in OR)   # darker accent (button depth)
 INK = (10, 11, 13); PAPER = (245, 245, 245)
-CARDC = _hex("CTRLH_CARD_COLOR", (24, 26, 31))   # card background colour, e.g. CTRLH_CARD_COLOR=#1B2A41
+CARDC = _hex("CTRLH_CARD_COLOR", _T["card"]); BASEC = _hex("CTRLH_BG_COLOR", _T["base"])   # card background colour, e.g. CTRLH_CARD_COLOR=#1B2A41
 CARD_NUM = tuple(int(c * 0.85) for c in CARDC); CARD_GLASS = tuple(min(255, c + 10) for c in CARDC)   # derived: `numbers` / `glass` card fills
-_ALL_STYLES = ["classic", "proposed", "glass", "numbers"]
+_ALL_STYLES = ["classic", "proposed", "glass", "numbers", "outline", "solid", "neon", "paper", "soft", "terminal", "steps", "iconbox"]
 _DEFAULT_STYLE = "classic"   # what someone who just installed the kit gets
 _cs = os.environ.get("CTRLH_CARD_STYLES", "").replace(" ", "").lower()   # e.g. glass | classic,numbers | all
 CARD_STYLES = _ALL_STYLES if _cs == "all" else ([x for x in _cs.split(",") if x in _ALL_STYLES] or [_DEFAULT_STYLE])
@@ -218,7 +222,8 @@ def layout(blocks, reserve=0, top=True, cw=None, square=False):
 def bob(t, k): return 2.0 * math.sin(2 * math.pi * t / 3.6 + k)
 
 
-def toks_draw(d, cx, cy, text, size, key, al=1.0, wlist=None, t=0.0):
+def toks_draw(d, cx, cy, text, size, key, al=1.0, wlist=None, t=0.0, base=None, hitc=None):
+    base = base or PAPER; hitc = hitc or OR
     raw = text.split(" "); words = []
     for w in raw:
         if words and w.isascii() and words[-1].isascii(): words[-1] += " " + w
@@ -226,14 +231,14 @@ def toks_draw(d, cx, cy, text, size, key, al=1.0, wlist=None, t=0.0):
     def wl(w): return F(MONO, int(size * 0.9)).getlength(w) if w.isascii() else F(ARB, size).getlength(w, direction="rtl", language="ar")
     ws = [wl(w) for w in words]; sp = size * 0.28; total = sum(ws) + sp * (len(words) - 1); x = cx + total / 2
     for w, wd in zip(words, ws):
-        hit = bool(key) and key in w; col = OR if hit else PAPER
+        hit = bool(key) and key in w; col = hitc if hit else base
         for tw_, wd_ in (wlist or []):
             if wd_ in w and t >= tw_ - 0.05:
                 hit = True; q_ = prog(t, tw_ - 0.05, tw_ + 0.45)
                 if q_ < 1: d.rounded_rectangle((x - wd - 12, cy - size * 0.7, x + 12, cy + size * 0.7), 14, fill=A(OR, 0.35 * (1 - q_) * al))
         if w.isascii(): d.text((x - wd / 2, cy), w, font=F(MONO, int(size * 0.9)), fill=A(col, al), anchor="mm")
         else: d.text((x - wd / 2, cy), w, font=F(ARB, size), fill=A(col, al), anchor="mm", direction="rtl", language="ar")
-        if hit: d.line([(x - wd, cy + size * 0.7), (x, cy + size * 0.7)], fill=A(OR, al), width=5)
+        if hit: d.line([(x - wd, cy + size * 0.7), (x, cy + size * 0.7)], fill=A(hitc, al), width=5)
         x -= wd + sp
 
 
@@ -256,7 +261,7 @@ def draw_card(d, box, b, t, k):
     def body(cxx, rtl_right=None, color=PAPER, dyy=0):
         for j, ln in enumerate(lines):
             yy = cy + dyy + (j - (len(lines) - 1) / 2) * s * 1.3
-            if b.get("words"): toks_draw(d, cxx, yy, ln, s, None, al, b.get("words"), t)
+            if b.get("words"): toks_draw(d, cxx, yy, ln, s, None, al, b.get("words"), t, base=color, hitc=(255, 255, 255) if color == INK else None)
             else: txt(d, (cxx, yy), ln, s, A(color, al))
     if st == "proposed":
         y0d, y1d = y0 + dy, y1 + dy
@@ -290,6 +295,51 @@ def draw_card(d, box, b, t, k):
             d.rounded_rectangle((x0 + 28, cy - 32, x0 + 178, cy + 32), 32, fill=A(col, 0.18 * al), outline=A(col, al), width=3)
             d.text((x0 + 103, cy), (LBL_OK if ok else LBL_BAD), font=F(ARB, 32), fill=A(col, al), anchor="mm", direction="rtl", language="ar"); body(cx)
         else: body(cx)
+    elif st in ("outline", "solid", "neon", "paper"):
+        y0d, y1d = y0 + dy, y1 + dy; narrow = (x1 - x0) < 600
+        if st == "neon":
+            g = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ImageDraw.Draw(g).rounded_rectangle((x0, y0d, x1, y1d), 26, outline=A(col if ok is not None else OR, 0.9 * al), width=9)
+            d._image.alpha_composite(g.filter(ImageFilter.GaussianBlur(9)))
+        fill = {"outline": A(lerp(BASEC, CARDC, 0.5), 0.55 * al), "solid": A(OR, al), "neon": A(lerp(BASEC, CARDC, 0.8), al), "paper": A((244, 243, 238), al)}[st]
+        edge = {"outline": lerp((90, 94, 106), OR, max(hl, 0.55)), "solid": lerp(INK, OR, 0.0), "neon": col if ok is not None else OR, "paper": lerp((205, 203, 196), OR, hl)}[st]
+        d.rounded_rectangle((x0, y0d, x1, y1d), 26, fill=fill, outline=A(edge, al), width=4 if st in ("solid", "neon") else 3)
+        tc = INK if st == "solid" else ((22, 24, 28) if st == "paper" else PAPER)
+        if st == "solid" and ok is not None: d.rounded_rectangle((x0, y0d, x0 + 14, y1d), 7, fill=A(INK, al))
+        elif st != "solid" and ok is not None: d.rounded_rectangle((x0, y0d, x0 + 12, y1d), 6, fill=A(col, al))
+        body(cx + (10 if ok is not None else 0), color=tc)
+    elif st in ("soft", "terminal", "steps", "iconbox"):
+        y0d, y1d = y0 + dy, y1 + dy; narrow = (x1 - x0) < 600; idx = b.get("idx", 0) + 1
+        if st == "soft":
+            g = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ImageDraw.Draw(g).rounded_rectangle((x0, y0d + 6, x1, y1d + 6), 24, fill=A(col if ok is not None else OR, 0.28 * al))
+            d._image.alpha_composite(g.filter(ImageFilter.GaussianBlur(14)))
+            d.rounded_rectangle((x0, y0d, x1, y1d), 24, fill=A(CARDC, al), outline=A(lerp(col, OR, hl * 0.5) if ok is not None else OR, 0.85 * al), width=3)
+            if ok is not None and narrow: badge(d, x0 + 40, y0d + 40, ok, al, r=20); body(cx, dyy=18)
+            elif ok is not None: badge(d, x0 + 52, cy, ok, al, r=24); body(cx + 28)
+            else: body(cx)
+        elif st == "terminal":
+            d.rounded_rectangle((x0, y0d, x1, y1d), 14, fill=A((10, 11, 14), al), outline=A(lerp((60, 63, 72), OR, hl), al), width=3)
+            d.rounded_rectangle((x0, y0d, x0 + 10, y1d), 5, fill=A(col, al))
+            lab = "exit 1" if ok is False else ("exit 0" if ok else "$")
+            if narrow: d.text((x0 + 28, y0d + 30), lab, font=F(MONO, 22), fill=A(col, al), anchor="lm"); body(cx, dyy=18)
+            else:
+                d.text((x0 + 30, cy), lab, font=F(MONO, 24), fill=A(col, al), anchor="lm"); d.text((x1 - 30, cy), "$", font=F(MONO, 36), fill=A(OR, al), anchor="rm"); body(cx)
+        elif st == "steps":
+            d.rounded_rectangle((x0 + 4, y0d, x1, y1d), 22, fill=A(CARDC, al), outline=A(lerp(PAPER, OR, hl), al), width=3)
+            pw = (x1 - x0 - 60) * (0.35 + 0.5 * ((idx * 37) % 10) / 10.0) * ss(prog(t, b["t"] + 0.1, b["t"] + 0.9))
+            d.line([(x0 + 30, y1d - 3), (x0 + 30 + pw, y1d - 3)], fill=A(col, al), width=5)
+            r_ = 28 if not narrow else 24; px_ = x0 + 4 if not narrow else x0 + 40
+            d.ellipse((px_ - r_, cy - r_ if not narrow else y0d + 6, px_ + r_, (cy + r_) if not narrow else y0d + 6 + 2 * r_), fill=A(OR, al), outline=A(PAPER, al), width=3)
+            d.text((px_, cy if not narrow else y0d + 6 + r_), str(idx), font=F(MONO, 30 if not narrow else 26), fill=A(INK, al), anchor="mm"); body(cx + (20 if not narrow else 0), dyy=(14 if narrow else 0))
+        else:
+            d.rounded_rectangle((x0, y0d, x1, y1d), 22, fill=A(CARDC, al), outline=A(PAPER, al), width=3)
+            d.line([(x0 + 12, y1d + 1), (x1 - 12, y1d + 1)], fill=A(OR, al), width=7)
+            c2 = col if ok is not None else OR; g_ = ("bad" if ok is False else ("ok" if ok else str(idx)))
+            def glyph(gx, gy, sz):
+                if g_ in ("ok", "bad"): _mark(d, g_, gx, gy, sz * 0.5, INK, al)
+                else: d.text((gx, gy), g_, font=F(MONO, sz), fill=A(INK, al), anchor="mm")
+            bw_ = 86 if not narrow else (x1 - x0)
+            if narrow: d.rounded_rectangle((x0, y0d, x1, y0d + 62), 22, fill=A(c2, al)); glyph(cx, y0d + 31, 34); body(cx, dyy=30)
+            else: d.rounded_rectangle((x0, y0d, x0 + bw_, y1d), 22, fill=A(c2, al)); glyph(x0 + bw_ / 2, cy, 44); body(cx + bw_ / 2)
     else:
         sh = col if ok is not None else OR
         hard(d, (x0, y0, x1, y1), CARDC, sh, border=lerp(PAPER, OR, hl), a=al, r=26, off=9, bw=4, dy=dy)
@@ -914,7 +964,11 @@ def corner_logo(im, t, T_END):
 
 
 def make_bg(tech_labels):
-    if WIDE: return Image.open(os.environ.get("BGFILE", SD + "backgrounds/default.png")).convert("RGBA")
+    import bg_styles
+    custom = bool(os.environ.get("CTRLH_BG_STYLE")) or OR != (255, 138, 17) or BASEC != (13, 14, 16)
+    if os.environ.get("BGFILE") and WIDE: return Image.open(os.environ["BGFILE"]).convert("RGBA")
+    if custom: return bg_styles.make(os.environ.get("CTRLH_BG_STYLE", "circuit").lower(), W, H, OR, BASEC, tech_labels, MONO)
+    if WIDE: return Image.open(SD + "backgrounds/default.png").convert("RGBA")
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
     base = np.zeros((H, W, 3), np.float32) + np.array([13, 14, 16], np.float32)
     def glow(cx, cy, r, col, k):

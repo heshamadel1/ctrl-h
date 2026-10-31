@@ -1,6 +1,6 @@
-# Ctrl + H Video Kit
+# Ctrl + H Video Kit · V2
 
-Branded explainer-video pipeline + Claude skills for the **Ctrl + H** programming channel (Egyptian Arabic, English technical terms).
+Branded explainer-video pipeline + Claude skills, built for the **Ctrl + H** programming channel and now **usable for any channel**: on first use Claude asks for your identity, colours, card styles and background and saves them in `ctrlh.config.json`.
 
 Takes a voiceover WAV and a declarative scene file and renders a synced **16:9 (1920x1080)** and native **9:16 (1080x1920)** video at 30 fps, with generated sound effects. No captions, no opening card.
 
@@ -9,6 +9,37 @@ Owner: Hesham Adel · GitHub: [@heshamadel1](https://github.com/heshamadel1)
 Platforms: YouTube (`ctrlh-dev`), TikTok, Instagram, Facebook.
 
 Content: Programming, Software Engineering, Back-End Development.
+
+---
+
+## What is new in V2
+
+|               | V1                    | V2                                                                                                                                  |
+| ------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Who it is for | the Ctrl + H channel  | **anyone**                                                                                                                          |
+| First use     | edit files by hand    | **Claude asks you** (name, colours, cards, background, logo) and saves `ctrlh.config.json`                                          |
+| Colours       | orange + black        | **9 themes** (orange, cyan, blue, violet, pink, red, gold, green, mono) or your own `#RRGGBB`                                       |
+| Card styles   | 4                     | **12**: classic, proposed, glass, numbers + outline, solid, neon, paper, soft, terminal, steps, iconbox; choose one, several or all |
+| Backgrounds   | 1 image per tech      | **8 styles for any colour**: circuit, grid, hex, dots, waves, aurora, blueprint, minimal (or your own image)                        |
+| Blocks        | cards + 3 infographic | + `versus`, `matrix`, `tabcard`, `icon3d`                                                                                           |
+| Default       | all cards             | **one style (`classic`)** until you choose                                                                                          |
+
+Pictures: `docs/images/themes.png`, `docs/images/backgrounds.png`, `docs/images/cards-12-styles-orange.png`, `docs/images/cards-12-styles-violet.png`.
+
+![themes](docs/images/themes.png)
+![backgrounds](docs/images/backgrounds.png)
+![cards](docs/images/cards-12-styles-violet.png)
+
+### First run (what happens)
+
+1. Install the skills (section 6) and open Claude inside this folder.
+2. Ask for your first video. Claude sees there is no `ctrlh.config.json` and asks: **identity** (name, handle, platforms, language, topics), **colours** (theme or custom hex), **card styles** (one, several or all), **background**, **logo/monogram/fonts/end-card lines**. It shows the preview pictures first.
+3. Claude saves the answers (`python3 engine/ctrlh_setup.py ...`), renders a short preview so you can see it, and only then builds your video.
+4. Later changes: just say `use only glass and neon cards`, `switch to the cyan theme`, `background hex`, `re-run setup`.
+
+No Claude? Run `python3 engine/ctrlh_setup.py` and answer the questions in the terminal, or copy `profiles/ctrlh.config.json` and edit it. The config keys are listed in the skill and in `engine/ctrlh_config.py`; any `CTRLH_*` environment variable still overrides the config for one command.
+
+Preview sheets can be re-made with `python3 engine/ctrlh_preview.py docs/images`.
 
 ---
 
@@ -82,30 +113,41 @@ You can skip the transcription step: it only gives you the text of each spoken p
 
 Run everything from inside `examples/`. The commands use `lk_anim.py` / `lk_scenes.py` (both are in the repo); replace them with your own scene files for your videos.
 
-**A. Try the video: no voiceover needed (first three commands)**
+**0. Your look (once).** Run `python3 ../engine/ctrlh_setup.py` (or just ask Claude: it asks you the same questions) to save your channel name, colours, card styles and background in `ctrlh.config.json`. Skip it to use the defaults (orange theme, `classic` cards, circuit background).
+
+**A. Silent preview: no voiceover needed**
 
 ```bash
 cd examples
 
-FMT=wide python3 lk_anim.py frames out 20 60      # PNG preview frames at 20 s and 60 s (fast, do this first)
+FMT=wide python3 lk_anim.py frames out 20 60      # PNG frames at 20 s and 60 s (fast, do this first)
+FMT=reel python3 lk_anim.py frames out_reel 20 60 # the same frames in 9:16
 FMT=wide python3 lk_anim.py video v_wide.mp4      # full 16:9 render, silent (6-10 min, run in the background)
 FMT=reel python3 lk_anim.py video v_reel.mp4      # native 9:16, silent
 ```
 
-**B. Final video with sound: needs your own voiceover (`voice.wav`)**
+Always check the frames in both formats before a full render. These files have **no sound**: they are previews.
+
+**B. Final export: needs your own voiceover WAV (`voice.wav`)**
+
+The final video is always as long as the voiceover, and its scene file must be timed to that voiceover (section 5). The example scene files were timed to the owner's own voiceovers, which are not included, so you cannot export a finished example video without your own audio and scene file.
 
 ```bash
-python3 ../engine/make_audio.py lk_scenes.py sfx.wav     # sound effects generated from the scene file
+# 1. sound effects generated from your scene file
+python3 ../engine/make_audio.py lk_scenes.py sfx.wav
 
+# 2. the exact length of your voiceover, in seconds (copy-paste as is)
+DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 voice.wav)
+echo "voiceover length: $DUR s"
+
+# 3. mix voice + effects and cut the video to the voiceover length
 ffmpeg -y -i v_wide.mp4 -i voice.wav -i sfx.wav \
   -filter_complex_script ../engine/mix2.txt \
   -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k \
-  -t <DURATION> final.mp4
+  -t "$DUR" final.mp4
 ```
 
-`<DURATION>` is the length of `voice.wav` in seconds: the video must be exactly as long as the audio. The example scene files were timed to the owner's own voiceovers, which are not included, so for step B use your own scene file made for your own voiceover (section 5).
-
-Tip: always check frames (`frames` command) in both formats before a full render.
+Do the same with `v_reel.mp4` for the 9:16 version (`-t "$DUR"` stays the same). The scene file's `DUR` should equal `$DUR` (rounded), otherwise the end card will not land on your last words.
 
 ## 5. New video workflow
 
@@ -179,7 +221,7 @@ SC = [
 ]
 ```
 
-Each scene has a card `style` (`classic`, `proposed`, `glass`, `numbers`), a time window (`t0`, `t1`), a `stage` index and a headline. The `blocks` are what appears, each at its own time `t`. Common blocks: `card`, `chip`, `code` (typed lines, `focus`, `shake`), `flow`, `compare`, `counter`, `poll`, `predict`, `mystery`, `strike`, `ba` (before/after), `gain`, `note`, `shock`, `promise`, `challenge`, `chips`, `tiles`, and the three "infographic" blocks `icards`, `steplist`, `fixcards` (below). See `examples/` for each one in use. The Subscribe (0:45) and Follow (40 s before the end) buttons and the end card are added automatically.
+Each scene has a card `style` (`classic`, `proposed`, `glass`, `numbers`, `outline`, `solid`, `neon`, `paper`; only the styles you allowed are used), a time window (`t0`, `t1`), a `stage` index and a headline. The `blocks` are what appears, each at its own time `t`. Common blocks: `card`, `chip`, `code` (typed lines, `focus`, `shake`), `flow`, `compare`, `counter`, `poll`, `predict`, `mystery`, `strike`, `ba` (before/after), `gain`, `note`, `shock`, `promise`, `challenge`, `chips`, `tiles`, and the three "infographic" blocks `icards`, `steplist`, `fixcards` (below). See `examples/` for each one in use. The Subscribe (0:45) and Follow (40 s before the end) buttons and the end card are added automatically.
 
 ### Infographic blocks: `icards`, `steplist`, `fixcards`
 
@@ -249,19 +291,32 @@ Claude will follow the skill: segment the voice, map the script to the timings, 
 
 ## 7. Change colors, fonts and video size
 
-These are set with environment variables (no code editing). Put them in front of any command:
+### Priority: who wins when settings disagree
 
-| What                                                    | Variable            | Example                                               |
-| ------------------------------------------------------- | ------------------- | ----------------------------------------------------- |
-| Accent color (default orange `#FF8A11`)                 | `CTRLH_ACCENT`      | `CTRLH_ACCENT=#00B8D9`                                |
-| Card styles used in the video (default: `classic` only) | `CTRLH_CARD_STYLES` | `CTRLH_CARD_STYLES=glass`, `classic,numbers` or `all` |
-| Card background color                                   | `CTRLH_CARD_COLOR`  | `CTRLH_CARD_COLOR=#1B2A41`                            |
-| Arabic font file                                        | `CTRLH_FONT_AR`     | `CTRLH_FONT_AR=/path/Tajawal-Bold.ttf`                |
-| English / code font file                                | `CTRLH_FONT_LATIN`  | `CTRLH_FONT_LATIN=/path/JetBrainsMono-Bold.ttf`       |
-| Output width (height follows the aspect ratio)          | `OUT_W`             | `OUT_W=1280` gives 1280x720 (16:9) or 720x1280 (9:16) |
-| Background image                                        | `BGFILE`            | `BGFILE=assets/backgrounds/bg_react.png`              |
-| Assets folder (fonts, logo, monogram)                   | `CTRLH_ASSETS`      | `CTRLH_ASSETS=/my/assets`                             |
-| Subscribe / Follow time (seconds)                       | `SUB_T`, `FOL_T`    | `SUB_T=30 FOL_T=100`                                  |
+1. **Environment variables** typed in front of a command (`CTRLH_ACCENT=#00B8D9 python3 ...`): win, but only for that one command.
+2. **`ctrlh.config.json`**: your saved settings, used for every video of this channel.
+3. **Defaults** built into the engine (orange theme, `classic` cards, circuit background).
+
+The saved config belongs to the **current channel** (the folder it lives in). Another channel = another folder with its own `ctrlh.config.json` (or point to it with `CTRLH_CONFIG=/path/ctrlh.config.json`).
+
+You can change the config at any time **without editing the skills**: say it to Claude ("use only glass and neon cards", "switch to the cyan theme", "background hex"), run `python3 engine/ctrlh_setup.py` again, or edit `ctrlh.config.json` by hand. The skill files stay the same.
+
+These are the environment variables (no code editing). Put them in front of any command:
+
+| What                                                                           | Variable            | Example                                               |
+| ------------------------------------------------------------------------------ | ------------------- | ----------------------------------------------------- |
+| Colour theme (orange, cyan, blue, violet, pink, red, gold, green, mono)        | `CTRLH_THEME`       | `CTRLH_THEME=violet`                                  |
+| Accent color (default orange `#FF8A11`)                                        | `CTRLH_ACCENT`      | `CTRLH_ACCENT=#00B8D9`                                |
+| Background style (circuit, grid, hex, dots, waves, aurora, blueprint, minimal) | `CTRLH_BG_STYLE`    | `CTRLH_BG_STYLE=hex`                                  |
+| Background base colour                                                         | `CTRLH_BG_COLOR`    | `CTRLH_BG_COLOR=#0A0F1E`                              |
+| Card styles used in the video (default: `classic` only)                        | `CTRLH_CARD_STYLES` | `CTRLH_CARD_STYLES=glass`, `classic,numbers` or `all` |
+| Card background color                                                          | `CTRLH_CARD_COLOR`  | `CTRLH_CARD_COLOR=#1B2A41`                            |
+| Arabic font file                                                               | `CTRLH_FONT_AR`     | `CTRLH_FONT_AR=/path/Tajawal-Bold.ttf`                |
+| English / code font file                                                       | `CTRLH_FONT_LATIN`  | `CTRLH_FONT_LATIN=/path/JetBrainsMono-Bold.ttf`       |
+| Output width (height follows the aspect ratio)                                 | `OUT_W`             | `OUT_W=1280` gives 1280x720 (16:9) or 720x1280 (9:16) |
+| Background image                                                               | `BGFILE`            | `BGFILE=assets/backgrounds/bg_react.png`              |
+| Assets folder (fonts, logo, monogram)                                          | `CTRLH_ASSETS`      | `CTRLH_ASSETS=/my/assets`                             |
+| Subscribe / Follow time (seconds)                                              | `SUB_T`, `FOL_T`    | `SUB_T=30 FOL_T=100`                                  |
 
 Examples:
 
@@ -277,22 +332,30 @@ CTRLH_ACCENT=#00B8D9 python3 ../engine/ctrlh_bg.py react ../assets/backgrounds/b
 CTRLH_ACCENT=#00B8D9 BGFILE=../assets/backgrounds/bg_cyan.png FMT=wide python3 lk_anim.py video v.mp4
 ```
 
-### Card style, card color and background
-
 ### Everything the engine can draw (with pictures)
 
 All pictures are in `docs/images/` (16:9 and 9:16 versions, plus `overview-16x9.png` and `overview-9x16.png`). They are made from `examples/showcase_scenes.py`; re-make them with `CTRLH_CARD_STYLES=all FMT=wide python3 examples/showcase_anim.py frames out 5 11 17 23 29 35 41 45 50 55`.
 
 ![overview](docs/images/overview-16x9.png)
 
-**Count: 4 card styles + 3 card shapes (+1 legacy) + 3 infographic blocks + 4 newer blocks (`versus`, `matrix`, `tabcard`, `icon3d`).**
+![the 12 card styles](docs/images/cards-12-styles-orange.png)
 
-| #   | Card style | What it looks like                                            | Best for                         | Picture                            |
-| --- | ---------- | ------------------------------------------------------------- | -------------------------------- | ---------------------------------- |
-| 1   | `classic`  | thick border, hard colored shadow, round check/cross badge    | good / bad statements            | `docs/images/style-1-classic.png`  |
-| 2   | `proposed` | status bar on the edge, small `tag` pill, key word underlined | rules and definitions            | `docs/images/style-2-proposed.png` |
-| 3   | `glass`    | translucent card, light border                                | calm explanations, closing lines | `docs/images/style-3-glass.png`    |
-| 4   | `numbers`  | big faint index 01/02/03 + right/wrong pill                   | steps and mistakes lists         | `docs/images/style-4-numbers.png`  |
+**Count: 12 card styles + 3 card shapes (+1 legacy) + 3 infographic blocks + 4 newer blocks (`versus`, `matrix`, `tabcard`, `icon3d`).**
+
+| #   | Card style | What it looks like                                            | Best for                         | Picture                                  |
+| --- | ---------- | ------------------------------------------------------------- | -------------------------------- | ---------------------------------------- |
+| 1   | `classic`  | thick border, hard colored shadow, round check/cross badge    | good / bad statements            | `docs/images/style-1-classic.png`        |
+| 2   | `proposed` | status bar on the edge, small `tag` pill, key word underlined | rules and definitions            | `docs/images/style-2-proposed.png`       |
+| 3   | `glass`    | translucent card, light border                                | calm explanations, closing lines | `docs/images/style-3-glass.png`          |
+| 4   | `numbers`  | big faint index 01/02/03 + right/wrong pill                   | steps and mistakes lists         | `docs/images/style-4-numbers.png`        |
+| 5   | `outline`  | thin outline, nearly transparent fill                         | calm lines                       | `docs/images/cards-12-styles-orange.png` |
+| 6   | `solid`    | filled with the accent colour, dark text                      | one key statement                | same sheet                               |
+| 7   | `neon`     | glowing accent border                                         | good / bad, emphasis             | same sheet                               |
+| 8   | `paper`    | light card, dark text                                         | high contrast                    | same sheet                               |
+| 9   | `soft`     | status-colour border, soft glow, round badge                  | right / wrong lists              | same sheet                               |
+| 10  | `terminal` | terminal line: `exit 0` / `exit 1`, `$`                       | commands and results             | same sheet                               |
+| 11  | `steps`    | numbered circle on the edge, progress underline               | ordered steps                    | same sheet                               |
+| 12  | `iconbox`  | coloured block with check / cross / number                    | right / wrong lists              | same sheet                               |
 
 | Card shape (several cards in one scene) | Layout                                         | Picture                           |
 | --------------------------------------- | ---------------------------------------------- | --------------------------------- |
@@ -320,15 +383,15 @@ Per-column colours in `versus`/`matrix` are written as `"#RRGGBB"`; leave `color
 
 Shapes and blocks are chosen by the scene file (shapes rotate automatically); **card styles** are the thing you choose when you install.
 
-### Card style, card color and background
+### Choosing card styles, colours and background
 
-**Default for a new install: one style, `classic`.** You (the person who installed the kit) decide: keep it, pick another one, a few of them, or use all four.
+**Default for a new install: one style, `classic`.** You (the person who installed the kit) decide: keep it, pick another one, a few of them, or use all twelve.
 
 ```bash
 python3 lk_anim.py ...                                                      # default: classic only
 CTRLH_CARD_STYLES=glass FMT=wide python3 lk_anim.py video v.mp4             # one style for the whole video
 CTRLH_CARD_STYLES=classic,numbers FMT=wide python3 lk_anim.py video v.mp4   # only these two, rotating
-CTRLH_CARD_STYLES=all FMT=wide python3 lk_anim.py video v.mp4               # all four, a different one per scene
+CTRLH_CARD_STYLES=all FMT=wide python3 lk_anim.py video v.mp4               # all twelve, a different one per scene
 CTRLH_CARD_COLOR=#1B2A41 CTRLH_ACCENT=#00B8D9 BGFILE=../assets/backgrounds/bg_cyan.png \
   FMT=wide python3 lk_anim.py video v.mp4                                    # card color + accent + video background
 ```
@@ -344,17 +407,16 @@ Notes:
 
 ### What to tell Claude after you install the skills
 
-Environment variables only affect the commands you run yourself. For Claude to **always** use your choices, tell it once and ask it to save them in the skill. Copy and edit:
+Claude saves your choices in `ctrlh.config.json` (not in the skill files), so they apply to every later video of this channel. Environment variables still win for a single command. Copy and edit:
 
-- `Use only the glass card style with card color #1B2A41 in every video, and update the card-styles section of the skill (default is classic only).`
-- `Use all four card styles in every video (CTRLH_CARD_STYLES=all) and update the card-styles section of the skill.`
-- `From now on use accent color #00B8D9 for every video (set CTRLH_ACCENT and regenerate the backgrounds with it) and update the colors section of the skill.`
-- `Use the fonts assets/fonts/Tajawal-Bold.ttf for Arabic and assets/fonts/JetBrainsMono-Bold.ttf for English (CTRLH_FONT_AR / CTRLH_FONT_LATIN) and update the fonts section of the skill.`
-- `Render every video at 1280x720 and 720x1280 (OUT_W=1280 and OUT_W=720) and update the output section of the skill.`
-- `My channel is called <Name> on <platforms>. Replace the Ctrl + H name, sign-off and platforms in both skills and in the end card.`
+- `Use only the glass card style with card color #1B2A41 in every video.`
+- `Use all card styles in every video.`
+- `Switch to the cyan theme and the hex background.`
+- `Use accent color #00B8D9 for every video and regenerate the background with it.`
+- `Use the fonts assets/fonts/Tajawal-Bold.ttf for Arabic and assets/fonts/JetBrainsMono-Bold.ttf for English.`
+- `Render every video at 1280x720 and 720x1280.`
+- `My channel is called <Name> on <platforms>, end-card lines "<line 1>" / "<line 2>". Re-run the setup.`
 - `I added my logo (assets/logo_ch.png) and monogram (assets/mono.png). Check them in a frame at the end card.`
-
-If you want a one-off change instead, say it for that video only (`For this video only use ...`).
 
 ## 8. Using it for your own channel
 
