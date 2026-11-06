@@ -1,0 +1,252 @@
+import os, sys, wave, math, importlib.util
+import numpy as np
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(sys.argv[1])))
+spec = importlib.util.spec_from_file_location("rp", sys.argv[1])
+RP = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(RP)
+
+SR = 48000
+T = RP.DUR
+n = int(SR * T)
+t = np.arange(n) / SR
+rng = np.random.default_rng(71)
+L = np.zeros(n)
+R = np.zeros(n)
+
+
+def ss(x):
+    x = np.clip(x, 0, 1)
+    return x * x * (3 - 2 * x)
+
+
+def prog(a, b):
+    return np.clip((t - a) / (b - a), 0, 1)
+
+
+def fft_filter(x, lo=None, hi=None, slope=4.0):
+    X = np.fft.rfft(x)
+    f = np.fft.rfftfreq(len(x), 1 / SR)
+    g = np.ones_like(f)
+    if lo:
+        g *= 1 / (1 + (lo / np.maximum(f, 1e-3)) ** (2 * slope))
+    if hi:
+        g *= 1 / (1 + (np.maximum(f, 1e-3) / hi) ** (2 * slope))
+    return np.fft.irfft(X * g, len(x))
+
+
+def add(sig, t0, gain=1.0, pan=0.0):
+    i0 = int(t0 * SR)
+    m = min(len(sig), n - i0)
+    if m <= 0:
+        return
+    a = (pan + 1) * math.pi / 4
+    L[i0:i0 + m] += sig[:m] * gain * math.cos(a)
+    R[i0:i0 + m] += sig[:m] * gain * math.sin(a)
+
+
+def place(sig, gain=1.0, pan=0.0):
+    a = (pan + 1) * math.pi / 4
+    L[:] += sig * gain * math.cos(a)
+    R[:] += sig * gain * math.sin(a)
+
+
+def click(f=2400, amp=1.0, length=0.05, decay=0.004):
+    m = int(SR * length)
+    tt = np.arange(m) / SR
+    noise = fft_filter(rng.standard_normal(m), lo=2500, hi=9000) * np.exp(-tt / decay)
+    noise /= max(1e-9, np.max(np.abs(noise)))
+    tone = np.sin(2 * np.pi * f * tt) * np.exp(-tt / (decay * 1.5))
+    return amp * (0.7 * noise + 0.5 * tone)
+
+
+def note(f, d, amp):
+    m = int(SR * d)
+    tt = np.arange(m) / SR
+    e = np.minimum(tt / 0.004, 1.0) * np.exp(-tt / (d * 0.32))
+    return amp * e * (np.sin(2 * np.pi * f * tt) + 0.25 * np.sin(2 * np.pi * 2 * f * tt) + 0.08 * np.sin(2 * np.pi * 3 * f * tt))
+
+
+def pluck(f, d=0.5, amp=1.0):
+    m = int(SR * d)
+    tt = np.arange(m) / SR
+    return amp * np.exp(-tt / (d * 0.28)) * (np.sin(2 * np.pi * f * tt) + 0.3 * np.sin(2 * np.pi * 2 * f * tt))
+
+
+def whoosh(d=0.6, f_lo=400, f_hi=5000, up=True):
+    m = int(SR * d)
+    tt = np.arange(m) / SR
+    nz = rng.standard_normal(m)
+    out = np.zeros(m)
+    centers = np.geomspace(f_lo, f_hi, 5)
+    if not up:
+        centers = centers[::-1]
+    for k, fc in enumerate(centers):
+        band = fft_filter(nz, lo=fc * 0.7, hi=fc * 1.4)
+        band /= max(1e-9, np.max(np.abs(band)))
+        out += band * np.exp(-(((tt - d * (k + 0.5) / 5) / (d * 0.14)) ** 2))
+    return out * 0.5
+
+
+env = ss(prog(0.0, 1.5)) * (1 - ss(prog(T - 1.5, T)))
+drone = 0.55 * np.sin(2 * np.pi * 55 * t) + 0.22 * np.sin(2 * np.pi * 110 * t + 0.6) * (0.6 + 0.4 * np.sin(2 * np.pi * 0.21 * t))
+place(drone * env * 0.07, 1.0, 0.0)
+air = fft_filter(rng.standard_normal(n), lo=180, hi=1400); air /= np.max(np.abs(air))
+place(air * env * 0.011 * (0.7 + 0.3 * np.sin(2 * np.pi * 0.15 * t)), 1.0, 0.0)
+prog_ch = [[220.0, 261.63, 329.63], [174.61, 220.0, 261.63], [261.63, 329.63, 392.0], [196.0, 246.94, 293.66]]
+pad = np.zeros(n)
+for k in range(11):
+    c0 = k * 8.6; c1 = c0 + 8.6
+    w = ss(prog(c0, c0 + 1.8)) * (1 - ss(prog(c1 - 1.0, c1 + 1.0)))
+    for f in prog_ch[k % 4]:
+        pad += np.sin(2 * np.pi * f * t) * w * 0.25
+place(pad * env * 0.04, 1.0, 0.0)
+# soft pulse + arpeggio for energy (low at start, builds to the middle, calm at the end)
+energy = ss(prog(0, 20)) * (1 - 0.5 * ss(prog(70, 85)))
+for k in range(int(T / 0.6)):
+    tk = k * 0.6
+    if tk < 2.0 or tk > T - 3.0: continue
+    m = int(0.25 * SR); tt2 = np.arange(m) / SR
+    kick = np.sin(2 * np.pi * (52 + 70 * np.exp(-tt2 / 0.03)) * tt2) * np.exp(-tt2 / 0.09)
+    add(kick, tk, 0.07 * energy[int(tk * SR)])
+    ch = prog_ch[int(tk // 8.6) % 4]
+    add(pluck(ch[k % 3] * 2, 0.35, 1.0), tk + 0.3, 0.018 * energy[int(tk * SR)], [-0.4, 0.4][k % 2])
+
+def flat(bl):
+    for b in bl:
+        if b["k"] in ("row", "tiles"): yield from flat(b["items"])
+        else: yield b
+def ding(t0, g=0.07): add(note(1318.5, 0.14, 1.0), t0, g, -0.1); add(note(1975.5, 0.34, 1.0), t0 + 0.1, g, 0.1)
+def thud(t0, g=0.14):
+    m2 = int(0.3 * SR); t3 = np.arange(m2) / SR
+    add(np.sin(2 * np.pi * (90 - 40 * t3 / 0.3) * t3) * np.exp(-t3 / 0.09), t0, g)
+for k, s_ in enumerate(RP.SC):   # alternating transition whooshes
+    add(whoosh(0.5, 500, 4200, up=(k % 2 == 0)), max(0.05, s_["t0"] - 0.05), 0.06)
+j = 0
+for s_ in RP.SC:
+    for b in flat(s_["blocks"]):
+        k_ = b["k"]; t0 = b.get("t", b.get("t0", 0))
+        if k_ == "card":
+            add(pluck([660.0, 784.0, 880.0, 988.0, 1046.5][j % 5], 0.4, 1.0), t0, 0.05, [-0.3, 0.0, 0.3][j % 3]); add(click(2800, 0.8, 0.04), t0, 0.05); j += 1
+            if b.get("ok") is True: ding(t0 + 0.25, 0.04)
+            if b.get("ok") is False: thud(t0 + 0.05)
+            if b.get("key"):
+                m2 = int(0.35 * SR); t3 = np.arange(m2) / SR
+                add(np.sin(2 * np.pi * (60 + 90 * np.exp(-t3 / 0.04)) * t3) * np.exp(-t3 / 0.11), t0 - 0.02, 0.16); add(note(1568.0, 0.16, 1.0), t0 + 0.02, 0.05, 0.2)
+        elif k_ == "counter":
+            n_ = int(b["v1"] - b["v0"])
+            for i in range(n_ + 1): add(click(1500 + 120 * i, 1.0, 0.04, 0.006), b["t0"] + (b["t1"] - b["t0"]) * i / max(1, n_), 0.06)
+        elif k_ == "flow":
+            for st in b["steps"]:
+                add(whoosh(0.35, 900, 5200, up=True), st[0], 0.045, -0.2); add(click(1800, 1.0, 0.05, 0.006), st[0] + 0.85, 0.07, 0.2)
+        elif k_ == "icards":
+            for it_ in b["items"]:
+                add(pluck([660.0, 784.0, 880.0, 988.0, 1046.5][j % 5], 0.4, 1.0), it_["t"], 0.05, [-0.3, 0.0, 0.3][j % 3]); add(click(2800, 0.8, 0.04), it_["t"], 0.05); add(whoosh(0.3, 800, 3500, up=True), it_["t"] + 0.1, 0.025); j += 1
+        elif k_ == "steplist":
+            for it_ in b["items"]:
+                add(click(1800, 1.0, 0.05, 0.006), it_["t"], 0.09); add(pluck(880.0, 0.25, 1.0), it_["t"] + 0.02, 0.04)
+                for ln_ in it_.get("lines", []):
+                    if len(ln_) > 3 and ln_[3] in ("bad", "ok"): add(note(1318.5, 0.14, 1.0) if ln_[3] == "ok" else np.sin(2 * np.pi * 140 * np.arange(int(0.25 * SR)) / SR) * np.exp(-np.arange(int(0.25 * SR)) / SR / 0.08), it_["t"] + ln_[0] + 0.1, 0.05)
+        elif k_ == "fixcards":
+            for it_ in b["items"]:
+                add(pluck([660.0, 784.0, 880.0, 988.0, 1046.5][j % 5], 0.4, 1.0), it_["t"], 0.05); j += 1
+                m_ = len(it_.get("chain", [])); cts_ = it_.get("chain_t") or [it_["t"] + 0.5 + 0.5 * q for q in range(m_)]
+                for ct_ in cts_: add(click(2200, 1.0, 0.04), ct_, 0.07)
+                if it_.get("fix"): ding(it_.get("fix_t", it_["t"] + 0.5 + 0.5 * m_ + 0.6), 0.05)
+        elif k_ == "versus":
+            for c_ in b["cols"]:
+                add(pluck(660.0, 0.4, 1.0), c_["t"], 0.05, -0.2); add(whoosh(0.3, 800, 3500, up=True), c_["t"], 0.03)
+                for bl_ in c_.get("bullets", []):
+                    if isinstance(bl_, (tuple, list)): add(click(2400, 1.0, 0.04), bl_[0], 0.06)
+        elif k_ == "matrix":
+            for r_ in b["rows"]:
+                add(click(1800, 1.0, 0.05, 0.006), r_["t"], 0.07)
+                for j_, c_ in enumerate(r_["cells"]):
+                    kd_ = c_[0] if isinstance(c_, (tuple, list)) else c_
+                    if kd_ == "ok": add(note(1318.5, 0.12, 1.0), r_["t"] + 0.15 * (j_ + 1), 0.04, 0.2)
+                    elif kd_ == "bad": add(np.sin(2 * np.pi * 150 * np.arange(int(0.2 * SR)) / SR) * np.exp(-np.arange(int(0.2 * SR)) / SR / 0.07), r_["t"] + 0.15 * (j_ + 1), 0.04)
+        elif k_ == "tabcard":
+            add(whoosh(0.3, 700, 3500, up=True), b["t"], 0.04)
+            for tb_ in b["tabs"]: add(click(2200, 1.0, 0.04), tb_["t"], 0.12); add(pluck(988.0, 0.3, 1.0), tb_["t"] + 0.1, 0.05)
+        elif k_ == "er":
+            for tb_ in b["tables"]: add(pluck(660.0, 0.4, 1.0), tb_["t"], 0.05, -0.2); add(whoosh(0.3, 800, 3500, up=True), tb_["t"], 0.03)
+            for l_ in b.get("links", []): add(whoosh(0.8, 500, 3000, up=True), l_[0], 0.04); add(click(2400, 1.0, 0.04), l_[0] + 0.9, 0.08)
+        elif k_ == "http":
+            add(click(2000, 1.0, 0.05), b["t"], 0.08); add(whoosh(0.7, 500, 3500, up=True), b["t_resp"] - 0.9, 0.05)
+            if int(b.get("status", 200)) < 300: ding(b["t_resp"], 0.06)
+            else: thud(b["t_resp"], 0.12)
+        elif k_ == "diff":
+            for l_ in b["lines"]:
+                if l_[1] == "+": add(note(1318.5, 0.12, 1.0), l_[0], 0.04, 0.2)
+                elif l_[1] == "-": add(np.sin(2 * np.pi * 150 * np.arange(int(0.2 * SR)) / SR) * np.exp(-np.arange(int(0.2 * SR)) / SR / 0.07), l_[0], 0.04)
+                else: add(click(1800, 1.0, 0.05, 0.006), l_[0], 0.05)
+        elif k_ == "queue":
+            for j_ in b["jobs"]: add(click(2200, 1.0, 0.04), j_["t_in"], 0.07); add(whoosh(0.4, 700, 3000, up=True), j_["t_start"], 0.03); ding(j_["t_done"], 0.04)
+        elif k_ == "recap":
+            for i_, it_ in enumerate(b["items"]): add(pluck([660.0, 784.0, 880.0, 988.0, 1046.5][i_ % 5], 0.4, 1.0), it_[0], 0.05); add(click(2800, 0.8, 0.04), it_[0], 0.05)
+        elif k_ == "titlevs":
+            add(whoosh(0.3, 600, 3500, up=True), b["t"], 0.05); add(click(2400, 1.0, 0.04), b["t"] + 0.25, 0.08)
+        elif k_ == "split":
+            add(whoosh(0.4, 500, 3500, up=True), b["t"], 0.05)
+            for P_ in b["panels"]:
+                for sv_ in P_["services"]: add(pluck(660.0, 0.4, 1.0), sv_["t"], 0.04); add(click(2600, 0.8, 0.04), sv_["t"], 0.04)
+                for e_ in P_.get("events", []):
+                    if e_[1] == "traffic": add(whoosh(0.8, 500, 3000, up=True), e_[0], 0.04)
+                    elif e_[1] == "fail": thud(e_[0] + 0.85, 0.12)
+                    elif e_[1] == "scale": add(whoosh(0.5, 400, 2600, up=True), e_[0], 0.05); ding(e_[0] + 0.3, 0.05)
+                    elif e_[1] == "ver": ding(e_[0], 0.06)
+        elif k_ == "chain":
+            for i_, s_ in enumerate(b["steps"]):
+                add(pluck([660.0, 784.0, 880.0, 988.0][i_ % 4], 0.4, 1.0), s_["t"], 0.05); add(click(2400, 0.9, 0.04), s_["t"], 0.05)
+                if s_.get("err"): thud(s_["err"][0] + 0.45, 0.1)
+        elif k_ == "hub":
+            add(pluck(523.0, 0.5, 1.0), b["hub"].get("t", b["t"]), 0.06)
+            for a_ in b.get("actions", []): add(whoosh(0.6, 500, 3200, up=True), a_["t"], 0.05); add(click(2400, 1.0, 0.05), a_["t"] + 0.9, 0.06)
+            for sp_ in b["spokes"]: add(pluck(784.0, 0.35, 1.0), sp_["t"], 0.04)
+        elif k_ == "pipeline":
+            for nd_ in b["nodes"]:
+                add(pluck(740.0, 0.4, 1.0), nd_["t"], 0.05); add(click(2600, 0.8, 0.04), nd_["t"], 0.05)
+                if nd_.get("badge"): ding(nd_["badge"][0], 0.06)
+        elif k_ == "deviceflow":
+            if b["phone"].get("press_t"): add(click(2000, 1.0, 0.05), b["phone"]["press_t"], 0.1)
+            add(whoosh(0.6, 500, 3200, up=True), b["api"].get("t", b["t"] + 0.3), 0.05)
+            for s_ in b["steps"]: add(click(2400, 0.9, 0.04), s_["t"], 0.05); ding(s_["t"] + 0.3, 0.05)
+        elif k_ == "codeann":
+            for (ts_, li_) in b.get("squiggle", []): add(click(1500, 1.0, 0.05), ts_, 0.05)
+            for tg_ in b.get("tags", []): add(note(1318.5, 0.12, 1.0), tg_[0], 0.04, 0.2)
+            if b.get("counter"): thud(b["counter"][0], 0.1)
+        elif k_ == "flowmini":
+            for i_, it_ in enumerate(b["items"]): add(pluck([660.0, 784.0, 880.0, 988.0][i_ % 4], 0.4, 1.0), it_["t"], 0.05)
+        elif k_ == "icon3d":
+            for it_ in b["items"]: add(pluck(784.0, 0.4, 1.0), it_["t"], 0.05); add(click(2800, 0.8, 0.04), it_["t"], 0.05)
+        elif k_ == "button":
+            tp = b["t0"] + 1.5
+            add(whoosh(0.3, 700, 4000, up=True), b["t0"], 0.05); add(click(2200, 1.0, 0.04), tp, 0.12); ding(tp + 0.12, 0.07)
+            if b["kind"] == "subscribe":
+                for i in range(3): add(note(2093.0, 0.12, 1.0), tp + 0.35 + 0.14 * i, 0.03, 0.2)
+        elif k_ == "promise": add(whoosh(0.3, 600, 3500, up=True), b["t0"], 0.04); add(note(1046.5, 0.12, 1.0), b["t_unlock"], 0.06); add(note(1568.0, 0.3, 1.0), b["t_unlock"] + 0.1, 0.06)
+        elif k_ == "shock": thud(b["t"] - 0.05, 0.3); add(whoosh(0.25, 300, 2500, up=False), b["t"] - 0.1, 0.08)
+        elif k_ == "strike": add(whoosh(0.35, 3000, 800, up=False), b["t_strike"], 0.06); add(click(1200, 1.0, 0.05), b["t_strike"] + 0.35, 0.1); add(note(1568.0, 0.2, 1.0), b["t_right"], 0.06)
+        elif k_ == "ba": add(whoosh(1.2, 400, 4000, up=True), b["t_slide"], 0.05)
+
+_st = getattr(RP, "SUB_T", None); _ft = getattr(RP, "FOL_T", None)   # same rules as anim.py: scene-file SUB_T / FOL_T (False = no button), else env, else defaults
+_sub = _st if _st is not None else float(os.environ.get("SUB_T", 45)); _fol = _ft if _ft is not None else float(os.environ.get("FOL_T", RP.DUR - 40))
+for tb_, kind_ in ((_sub, "subscribe"), (_fol, "follow")):
+    if tb_ is False: continue
+    if tb_ + 5.0 < RP.T_END and (kind_ == "subscribe" or tb_ >= 53 or _ft is not None):
+        tp = tb_ + 1.5
+        add(whoosh(0.3, 700, 4000, up=True), tb_, 0.05); add(click(2200, 1.0, 0.04), tp, 0.12); ding(tp + 0.12, 0.07)
+        if kind_ == "subscribe":
+            for i in range(3): add(note(2093.0, 0.12, 1.0), tp + 0.35 + 0.14 * i, 0.03, 0.2)
+add(note(1568.0, 0.2, 1.0), RP.TAG1 + 0.2, 0.05, 0.3); add(note(1760.0, 0.2, 1.0), RP.TAG1 + 0.55, 0.05, 0.3)
+mm = int(1.6 * SR); tt = np.arange(mm) / SR
+imp = np.sin(2 * np.pi * (34 * tt + 78 * 0.09 * (1 - np.exp(-tt / 0.09)))) * np.exp(-tt / 0.42)
+thump = fft_filter(rng.standard_normal(mm), hi=220) * np.exp(-tt / 0.05); thump /= np.max(np.abs(thump))
+add(imp * 0.9 + thump * 0.35, RP.T_END, 0.22)
+add(note(1318.5, 0.14, 1.0), RP.T_END + 1.3, 0.07, -0.1); add(note(1975.5, 0.34, 1.0), RP.T_END + 1.41, 0.07, 0.1)
+g = 2.3
+L = np.tanh(L * g * 1.1) / np.tanh(1.1); R = np.tanh(R * g * 1.1) / np.tanh(1.1)
+pcm = (np.clip(np.stack([L, R], axis=1), -1, 1) * 32767).astype(np.int16)
+with wave.open(sys.argv[2], "wb") as w:
+    w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes(pcm.tobytes())
+print("audio ok", len(L) / SR)

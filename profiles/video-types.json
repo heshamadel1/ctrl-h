@@ -1,0 +1,81 @@
+{
+  "_doc": "Video types. lint checks the features each type should use; max_part_seconds / formats are defaults a type brings (config keys of the same name win).",
+  "explainer": {
+    "max_part_seconds": 180,
+    "formats": [
+      "wide"
+    ],
+    "min_scenes": 6,
+    "features": [
+      "shock",
+      "promise",
+      "strike",
+      "code",
+      "poll",
+      "note"
+    ],
+    "any_of": [
+      [
+        "arch",
+        "chain",
+        "codeann",
+        "deviceflow",
+        "diff",
+        "er",
+        "flowmini",
+        "http",
+        "hub",
+        "pipeline",
+        "queue",
+        "recap",
+        "split",
+        "versus"
+      ]
+    ],
+    "notes": "full lesson 2-6 min, split above max_part_seconds"
+  },
+  "short": {
+    "max_part_seconds": 60,
+    "formats": [
+      "wide"
+    ],
+    "min_scenes": 3,
+    "features": [
+      "shock",
+      "poll"
+    ],
+    "any_of": [],
+    "notes": "under 60 s, one idea, 9:16 only when asked"
+  },
+  "series": {
+    "max_part_seconds": 150,
+    "formats": [
+      "wide"
+    ],
+    "min_scenes": 5,
+    "features": [
+      "shock",
+      "promise",
+      "recap",
+      "poll"
+    ],
+    "any_of": [
+      [
+        "arch",
+        "chain",
+        "codeann",
+        "deviceflow",
+        "diff",
+        "er",
+        "flowmini",
+        "http",
+        "hub",
+        "pipeline",
+        "queue",
+        "split",
+        "versus"
+      ]
+    ],
+    "notes": "episode of a series: recap + next-episode hook"
+  }
+}
