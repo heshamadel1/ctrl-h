@@ -56,3 +56,21 @@ F["codeann"] = ("Annotated code", [{"k": "codeann", "t": .2, "file": "LoginServi
     "squiggle": [(3.0, 4), (3.1, 5), (3.2, 7), (3.3, 8)], "tags": [(3.4, 4, "Security", "#F0A050"), (3.6, 7, "Accounts", "#B07CFF"), (3.8, 8, "Identity", "#F2C230")],
     "counter": (4.0, "if × 10"), "bar": (4.0, 5.5, "#F0606E"), "label": (4.2, "Coupling", "#F0606E"), "cap": (4.6, "4 فرق بيعدّلوا في نفس الـ Method")}], 6.0, {})
 F["flowmini"] = ("Mini flow", [{"k": "flowmini", "t": .2, "items": [{"t": .4, "kind": "pill", "name": "Create Order", "icon": "check", "color": _GR}, {"t": 1.0, "kind": "card", "name": "CreateOrderCommand", "icon": "doc", "color": _OR}, {"t": 1.6, "kind": "circle", "name": "Handler", "icon": "gear", "color": _VI}]}, card(2.2, "Command بيروح لـ Handler واحد", None)], 3.6, {})
+
+# ---- optional paper look (scene key paper=True) ----
+_PP = {"paper": True, "style": "paper"}
+F["quote"] = ("Quote (paper)", [{"k": "quote", "t": .2, "who": "Martin Fowler", "lines": ["Any fool can write code that a computer can understand.", "Good programmers write code that humans can understand."], "hi": [(1.6, "a computer"), (2.4, "humans")]}], 4.0, dict(_PP))
+F["chatwin"] = ("Chat window (paper)", [{"k": "chatwin", "t": .2, "title": "booking-app · AI chat", "prompt": "ساعدني أعمل API لحجز المواعيد", "prompt_t": .6, "who": "AI", "cps": 30, "code": [
+    (1.4, 'app.post("/bookings", async (req) => {'), (2.4, "  const slot = await db.slots.find(req.slotId);"), (3.4, "  if (slot.taken) throw new Conflict();"), (4.4, "  return db.bookings")]}], 5.5, dict(_PP))
+F["bars"] = ("Chart cards (paper)", [{"k": "bars", "t": .2, "cards": [{"t": .4, "label": "تكلفة أقل", "kind": "down"}, {"t": 1.4, "label": "البزنس يكبر", "kind": "up"}]}], 4.5, dict(_PP))
+F["skeleton"] = ("Code skeleton (paper)", [{"k": "skeleton", "t": .2, "file": "login.tsx", "lines": 10, "seed": 3, "t0": .6, "t1": 2.6, "hot": [0, 3, 6]}], 3.5, dict(_PP))
+F["filegrid"] = ("File grid (paper)", [{"k": "bigcount", "t": .2, "label": "FILE", "of": "/500+", "t0": .4, "t1": 2.6, "v0": 0, "v1": 20}, {"k": "filegrid", "t": .3, "cols": 5, "t0": .6, "t1": 2.6, "missing": (3.0, 4), "active": [(1.0, 15)], "files": [
+    "user.ts", "db.sql", "api.ts", "cart.js", "auth.ts", "config.yml", "routes.js", "order.ts", "utils.ts", "index.js", "model.py", "hooks.ts", "store.ts", "app.tsx", "pay.ts", "login.tsx", "types.ts", "seed.sql", "cache.ts", "mail.ts"]}], 4.0, dict(_PP))
+
+# ---- paper blocks (1.0.0) ----
+F["quote"] = ("Quote", [{"k": "quote", "t": .2, "who": "Martin Fowler", "lines": ["Any fool can write code that a computer can understand.", "Good programmers write code that humans can understand."], "hl": [("computer", 1.5)]}], 3.2, {})
+F["chatwin"] = ("AI chat window", [{"k": "chatwin", "t": .2, "title": "booking-app · AI chat", "ask": "ساعدني أعمل API لحجز المواعيد", "ask_t": .5, "lines": [(1.4, 'app.post("/bookings", async (req) => {'), (2.2, "  const slot = await db.slots.find(req.slotId);"), (3.0, "  if (slot.taken) throw new Conflict();"), (3.8, "  return db.bookings")]}], 4.4, {})
+F["minichart"] = ("Mini charts", [{"k": "minichart", "t": .2, "rows": [{"t": .4, "label": "تكلفة أقل", "kind": "down"}, {"t": 1.6, "label": "البزنس يكبر", "kind": "up"}]}], 4.5, {})
+F["skeleton"] = ("Code skeleton", [{"k": "skeleton", "t": .2, "file": "login.tsx", "n": 9, "span": 2.4}], 3.4, {})
+F["filegrid"] = ("File grid", [{"k": "bigcount", "t": .2, "label": "FILE", "t0": .4, "t1": 2.4, "v0": 0, "v1": 20, "suffix": "/500+"}, {"k": "filegrid", "t": .6, "files": ["user.ts", "db.sql", "api.ts", "cart.js", "auth.ts", "config.yml", "routes.js", "order.ts", "utils.ts", "index.js", "model.py", "hooks.ts", "store.ts", "app.tsx", "pay.ts", "login.tsx", "types.ts", "seed.sql", "cache.ts", "mail.ts"], "span": 1.8, "missing": (4, 2.6), "pick": (15, 3.0)}], 3.8, {})
+F["bigcount"] = ("Big counter", [{"k": "bigcount", "t": .2, "label": "FILE", "t0": .4, "t1": 2.4, "v0": 0, "v1": 20, "suffix": "/500+"}], 3.0, {})

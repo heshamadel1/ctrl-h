@@ -16,7 +16,7 @@
   ],
   "theme": "orange",
   "card_styles": "all",
-  "bg_style": "circuit",
+  "bg_style": "hud_live",
   "signoff_1": "Think Deeper.",
   "signoff_2": "Build Smarter.",
   "formats": [

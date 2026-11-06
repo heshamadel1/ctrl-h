@@ -9,6 +9,7 @@ THEMES = {
     "red":    dict(accent=(255, 92, 92), card=(34, 20, 22), base=(18, 10, 11), note="red on dark wine"),
     "gold":   dict(accent=(250, 204, 21), card=(32, 28, 16), base=(16, 14, 8), note="gold on dark olive"),
     "green":  dict(accent=(52, 211, 153), card=(16, 32, 28), base=(8, 16, 14), note="emerald on dark green"),
+    "paper":  dict(accent=(246, 212, 20), card=(251, 248, 238), base=(242, 237, 224), light=True, note="LIGHT: cream paper, black ink, yellow highlighter, hard shadows"),
     "mono":   dict(accent=(229, 231, 235), card=(28, 28, 30), base=(12, 12, 13), note="white and grey, no colour"),
 }
 DEFAULT = "orange"

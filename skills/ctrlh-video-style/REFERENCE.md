@@ -77,3 +77,11 @@ Themes: orange, cyan, blue, violet, pink, red, gold, green, mono (or `accent`/`c
 ## 10. Demo scene files (copy from them)
 
 `lk_scenes.py`, `nx3_scenes.py` (full videos), `showcase_scenes.py` (all card styles), `v3_example_scenes.py`, `v4_example_scenes.py`, `v4_terminal_gain_scenes.py`, `w_scenes.py`, `v6_blocks_scenes.py` (icards, steplist, fixcards), `v7_blocks_scenes.py` (versus, matrix, tabcard, icon3d), `v8_blocks_scenes.py` (er, queue, arch, http, diff, recap).
+
+## Paper theme + paper blocks (optional, only when asked)
+
+Light theme: `theme: paper`. Blocks: `quote` (t,who,lines,hl), `chatwin` (t,title,ask,ask_t,lines,cursor), `minichart` (rows), `skeleton` (file,n,span,hl), `filegrid` (files,cols,missing,pick), `bigcount` (label,t0,t1,v0,v1). Use for scale/overwhelm moments, quotes, AI-chat demos, cost/growth. Default stays dark orange.
+
+## Live background + topic chips (default `bg_style: hud_live`)
+
+The HUD background is animated; its bottom chips show the tools of each scene. Rule: when a scene discusses specific tools, add `chips=["Tool1", "Tool2"]` (max 3, exact names as in the script); otherwise the engine picks tools from the scene text, then falls back to `TECH`. Do not hard-code chips in the background image.

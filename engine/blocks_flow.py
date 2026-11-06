@@ -2,6 +2,11 @@
 #   titlevs, split, chain, hub, pipeline, deviceflow, codeann, flowmini   (+ _ico: a small line-icon set)
 # Text rule: Latin for names / code (mono font), Arabic only in captions, labels, tags of deviceflow, caption pills.
 
+def _tx(c):
+    """accent colour used for TEXT: darker on the light theme"""
+    return tuple(int(v * .62) for v in c) if _T.get("light") else c
+
+
 def _tw(s, size):
     return F(MONO, size).getlength(s) if s.isascii() else F(ARB, size).getlength(s, direction="rtl", language="ar")
 
@@ -113,7 +118,7 @@ def draw_titlevs(d, box, b, t, k):
     wa, wb = _tw(b["a"], s) + 56, _tw(b["b"], s) + 56; vs = 74
     xa0 = cx - (wa + wb + vs + 40) / 2
     d.rounded_rectangle((xa0 + 7, cy - 42 + 7, xa0 + wa + 7, cy + 42 + 7), 30, fill=A((8, 9, 12), al)); d.rounded_rectangle((xa0, cy - 42, xa0 + wa, cy + 42), 30, fill=A(ca, al)); txt(d, (xa0 + wa / 2, cy), b["a"], s, A((30, 24, 20), al))
-    xv = xa0 + wa + 20 + vs / 2; d.ellipse((xv - 37, cy - 37, xv + 37, cy + 37), fill=A((38, 40, 48), al), outline=A(GRAYC, al), width=3); txt(d, (xv, cy), "vs", 32, A(PAPER, al))
+    xv = xa0 + wa + 20 + vs / 2; d.ellipse((xv - 37, cy - 37, xv + 37, cy + 37), fill=A((38, 40, 48), al), outline=A(GRAYC, al), width=3); txt(d, (xv, cy), "vs", 32, A(PT, al))
     xb0 = xv + vs / 2 + 20
     d.rounded_rectangle((xb0 + 7, cy - 42 + 7, xb0 + wb + 7, cy + 42 + 7), 30, fill=A((8, 9, 12), al)); d.rounded_rectangle((xb0, cy - 42, xb0 + wb, cy + 42), 30, fill=A(cb, al)); txt(d, (xb0 + wb / 2, cy), b["b"], s, A(PAPER, al))
     if b.get("sub"): txt(d, (cx, cy + 74), b["sub"], 30 if WIDE else 26, A(GRAYC, al))
@@ -124,7 +129,7 @@ def _split_panel(d, pb, P, t, al, k):
     px0, py0, px1, py1 = pb; col = _hex_rgb(P["color"]); svc = P["services"]; n = len(svc); ev = P.get("events", [])
     d.rounded_rectangle(pb, 38, fill=A(lerp(CARDC, col, .08), al), outline=A(col, al), width=4)
     _pill(d, px0 + 34, py0, P["name"], 30, col, (28, 24, 20), al, anchor="l", h=52)
-    if P.get("tag"): w_ = _tw(P["tag"], 28) + 52; d.rounded_rectangle((px1 - 34 - w_, py0 - 26, px1 - 34, py0 + 26), 26, fill=BASEC and A(lerp(CARDC, col, .1), al), outline=A(col, al), width=3); txt(d, (px1 - 34 - w_ / 2, py0), P["tag"], 28, A(col, al))
+    if P.get("tag"): w_ = _tw(P["tag"], 28) + 52; d.rounded_rectangle((px1 - 34 - w_, py0 - 26, px1 - 34, py0 + 26), 26, fill=BASEC and A(lerp(CARDC, col, .1), al), outline=A(col, al), width=3); txt(d, (px1 - 34 - w_ / 2, py0), P["tag"], 28, A(_tx(col), al))
     ix0, iy0, ix1, iy1 = px0 + 30, py0 + 56, px1 - 30, py1 - 26; mid = (iy0 + iy1) / 2
     fan = P.get("mode", "box") == "fan"; sw = 100; sx = ix0 + sw / 2 + 6; src = P.get("src", {"name": "Traffic", "icon": "user"})
     rh = min(86, (iy1 - iy0 - 16) / n - 14); gh = rh * n + 14 * (n - 1); sy0 = mid - gh / 2
@@ -230,7 +235,7 @@ def draw_chain(d, box, b, t, k):
         _ico(d, s.get("icon", "gear"), cx0 + 22 + isz / 2, ya + ch / 2 + 2, isz * .32, col, al)
         tx = cx0 + 22 + isz + 26
         txt(d, (tx, ya + ch / 2 - (16 if s.get("sub") else -2)), s["name"], _fit(s["name"], 32, cx0 + cw - tx - 16, 18), A(PAPER, al), anchor="lm")
-        if s.get("sub"): txt(d, (tx, ya + ch / 2 + 24), s["sub"], _fit(s["sub"], 24, cx0 + cw - tx - 16, 15), A(col, al), anchor="lm")
+        if s.get("sub"): txt(d, (tx, ya + ch / 2 + 24), s["sub"], _fit(s["sub"], 24, cx0 + cw - tx - 16, 15), A(_tx(col), al), anchor="lm")
         if s.get("err"):
             te, lab = s["err"]; q = ss(prog(t, te, te + .5))
             if q > 0:
@@ -268,7 +273,7 @@ def draw_hub(d, box, b, t, k):
         d.rounded_rectangle((cx - hw / 2 + 8, hy0 + 8, cx + hw / 2 + 8, hy1 + 8), 26, fill=A(lerp(BASEC, hc, .25), ah)); d.rounded_rectangle((cx - hw / 2, hy0, cx + hw / 2, hy1), 26, fill=A(lerp(CARDC, hc, .18), ah), outline=A(hc, ah), width=3)
         d.rectangle((cx - hw / 2 + 20, hy0, cx + hw / 2 - 20, hy0 + 6), fill=A(hc, ah)); d.rounded_rectangle((cx - hw / 2 + 24, hy0 + 24, cx - hw / 2 + 96, hy0 + 96), 16, outline=A(hc, ah), width=2); _ico(d, H.get("icon", "cart"), cx - hw / 2 + 60, hy0 + 60, 22, hc, ah)
         txt(d, (cx - hw / 2 + 120, hy0 + (44 if H.get("sub") else 59)), H["name"], _fit(H["name"], 34, hw - 150, 20), A(PAPER, ah), anchor="lm")
-        if H.get("sub"): txt(d, (cx - hw / 2 + 120, hy0 + 84), H["sub"], _fit(H["sub"], 24, hw - 150, 15), A(hc, ah), anchor="lm")
+        if H.get("sub"): txt(d, (cx - hw / 2 + 120, hy0 + 84), H["sub"], _fit(H["sub"], 24, hw - 150, 15), A(_tx(hc), ah), anchor="lm")
     curves = []
     for j, sp in enumerate(S):
         ax = cx + (sxs[j] - cx) * .55; p0 = (ax, hy1 + 4); p3 = (sxs[j], sy - sr - 10); curves.append((p0, (ax, hy1 + (p3[1] - hy1) * .55), (sxs[j], hy1 + (p3[1] - hy1) * .35), p3))
@@ -287,7 +292,7 @@ def draw_hub(d, box, b, t, k):
                 if 0 < qq < 1:
                     x, y = _bz(p0, p1, p2, p3, ss(qq)); c = _hex_rgb(ac["color"]); d.ellipse((x - 20, y - 20, x + 20, y + 20), fill=A(c, .22 * al)); d.ellipse((x - 9, y - 9, x + 9, y + 9), fill=A(c, al), outline=A(PAPER, al), width=2)
         d.ellipse((sxs[j] - sr, sy - sr, sxs[j] + sr, sy + sr), fill=A(lerp(CARDC, sc, .22), al), outline=A(sc, al), width=4 if hit else 3); _ico(d, sp.get("icon", "cube"), sxs[j], sy, sr * .42, sc, al)
-        txt(d, (sxs[j], sy + sr + 28), sp["name"], _fit(sp["name"], 26, 150, 16), A(sc, al))
+        txt(d, (sxs[j], sy + sr + 28), sp["name"], _fit(sp["name"], 26, 150, 16), A(_tx(sc), al))
         if b.get("numbered") and q > .8:
             mxp, myp = _bz(p0, p1, p2, p3, .5); d.ellipse((mxp - 19, myp - 19, mxp + 19, myp + 19), fill=A(sc, al), outline=A(PAPER, al), width=2); txt(d, (mxp, myp), str(j + 1), 24, A((20, 22, 26), al))
     if b.get("q"):
@@ -313,7 +318,7 @@ def draw_pipeline(d, box, b, t, k):
         if al < .01: continue
         cx, cy = nd["_p"]; col = _hex_rgb(nd["color"]); pop = 1 + .12 * math.sin(math.pi * prog(t, nd["t"] - .1, nd["t"] + .5)); rr = r * pop
         d.ellipse((cx - rr, cy - rr, cx + rr, cy + rr), fill=A(lerp(CARDC, col, .2), al), outline=A(col, al), width=4); _ico(d, nd.get("icon", "gear"), cx, cy, r * .42, col, al)
-        txt(d, (cx, cy + r + 30), nd["name"], _fit(nd["name"], 26, 190, 15), A(col, al))
+        txt(d, (cx, cy + r + 30), nd["name"], _fit(nd["name"], 26, 190, 15), A(_tx(col), al))
         if nd.get("badge"):
             tb, lab = nd["badge"][:2]; bc = _hex_rgb(nd["badge"][2]) if len(nd["badge"]) > 2 else OR; ba = E(t, tb, .3)
             if ba > .01: _pill(d, cx, cy - r - 30 - (1 - ba) * 12, lab, 24, bc, (20, 22, 26) if bc[0] > 200 else PAPER, ba, h=42, padx=18)
@@ -328,10 +333,10 @@ def draw_deviceflow(d, box, b, t, k):
     else: pw_ = 440; px0, px1 = (x0 + x1) / 2 - pw_ / 2, (x0 + x1) / 2 + pw_ / 2; py0, py1 = y0, y0 + 520
     if a0 > .01:
         dy = (1 - a0) * 26
-        d.rounded_rectangle((px0, py0 + dy, px1, py1 + dy), 56, fill=A((16, 18, 24), a0), outline=A(CY_, a0), width=4); d.rounded_rectangle(((px0 + px1) / 2 - 58, py0 + 16 + dy, (px0 + px1) / 2 + 58, py0 + 30 + dy), 7, fill=A((50, 54, 64), a0))
-        cx = (px0 + px1) / 2; txt(d, (cx, py0 + 96 + dy), P.get("title", ""), 36, A(PAPER, a0)); fy = py0 + 170 + dy
+        d.rounded_rectangle((px0, py0 + dy, px1, py1 + dy), 56, fill=A((16, 18, 24), a0), outline=A(CY_, a0), width=4); PAPER_ = PT; d.rounded_rectangle(((px0 + px1) / 2 - 58, py0 + 16 + dy, (px0 + px1) / 2 + 58, py0 + 30 + dy), 7, fill=A((50, 54, 64), a0))
+        cx = (px0 + px1) / 2; txt(d, (cx, py0 + 96 + dy), P.get("title", ""), 36, A(PT, a0)); fy = py0 + 170 + dy
         for ic, tx in P.get("fields", []):
-            d.rounded_rectangle((px0 + 30, fy - 34, px1 - 30, fy + 34), 16, outline=A((84, 88, 100), a0), fill=A((28, 30, 38), a0), width=3); _ico(d, ic, px0 + 66, fy, 15, GRAYC, a0, 3); txt(d, (px0 + 100, fy), tx, 24, A(PAPER, a0), anchor="lm"); fy += 96
+            d.rounded_rectangle((px0 + 30, fy - 34, px1 - 30, fy + 34), 16, outline=A((84, 88, 100), a0), fill=A((28, 30, 38), a0), width=3); _ico(d, ic, px0 + 66, fy, 15, (160, 166, 180), a0, 3); txt(d, (px0 + 100, fy), tx, 24, A(PT, a0), anchor="lm"); fy += 96
         press = P.get("press_t"); pz = 1 + (.06 * math.sin(math.pi * prog(t, press, press + .4)) if press else 0); by_ = py1 - 90 + dy
         d.rounded_rectangle((cx - 120 * pz, by_ - 40 * pz, cx + 120 * pz, by_ + 40 * pz), 40, fill=A(OR, a0)); txt(d, (cx, by_), P.get("button", "Login"), 32, A((24, 20, 16), a0))
     A_ = b["api"]; aa = E(t, A_.get("t", b["t"] + .3), .3); ac = _hex_rgb(A_.get("color", "#31B3E8"))
@@ -351,7 +356,7 @@ def draw_deviceflow(d, box, b, t, k):
         col = _hex_rgb(s["color"]); ya = ys[i] + (1 - al) * 18; yc = ya + sh_ / 2
         d.line([(lx, yc), (sx1 + 6, yc)], fill=A(ac, al), width=5); _arrow(d, (sx1 + 6, yc), math.pi, ac, al)
         d.rounded_rectangle((sx0, ya, sx1, ya + sh_), 22, fill=A(lerp(CARDC, col, .1), al), outline=A(col, al), width=3); d.rectangle((sx0 + 18, ya, sx1 - 18, ya + 6), fill=A(col, al))
-        _pill(d, sx0 + 22, ya + sh_ / 2, s["tag"], 22, lerp(CARDC, col, .2), col, al, border=col, h=40, padx=16, anchor="l")
+        _pill(d, sx0 + 22, ya + sh_ / 2, s["tag"], 22, lerp(CARDC, col, .2), _tx(col), al, border=col, h=40, padx=16, anchor="l")
         isz = min(64, sh_ - 28); d.rounded_rectangle((sx1 - 18 - isz, ya + sh_ / 2 - isz / 2, sx1 - 18, ya + sh_ / 2 + isz / 2), 14, fill=A(lerp(CARDC, col, .25), al), outline=A(col, al), width=2); _ico(d, s.get("icon", "check"), sx1 - 18 - isz / 2, ya + sh_ / 2, isz * .3, col, al)
         txt(d, (sx1 - 36 - isz, ya + sh_ / 2), s["label"], _fit(s["label"], 32, sx1 - sx0 - isz - 260, 20), A(PAPER, al), anchor="rm")
         qb = ss(prog(t, s["t"] + .3, s["t"] + .7))
@@ -407,11 +412,11 @@ def draw_codeann(d, box, b, t, k):
     for (ts, li, lab, hx) in b.get("tags", []):
         ta = E(t, ts, .3) * al
         if ta > .01 and li < n:
-            c = _hex_rgb(hx); yy = ty0 + li * lh + lh / 2; _pill(d, x1 - 28 - tagw / 2, yy, lab, max(18, fs - 4), lerp(CARDC, c, .25), c, ta, border=c, h=min(46, lh * .9), padx=20)
+            c = _hex_rgb(hx); yy = ty0 + li * lh + lh / 2; _pill(d, x1 - 28 - tagw / 2, yy, lab, max(18, fs - 4), lerp((16, 16, 14), c, .22), c, ta, border=c, h=min(46, lh * .9), padx=20)
     fy = y0 + wh + 44 + dy
     if b.get("counter"):
         tc, lab = b["counter"]; ca = E(t, tc, .3)
-        if ca > .01: w_ = _tw(lab, 32) + 96; d.rounded_rectangle((x0 + 40, fy - 30, x0 + 40 + w_, fy + 30), 30, fill=A(lerp(CARDC, RED, .18), ca), outline=A(RED, ca), width=3); _ico(d, "code", x0 + 76, fy, 13, RED, ca, 3); txt(d, (x0 + 100, fy), lab, 32, A(PAPER, ca), anchor="lm")
+        if ca > .01: w_ = _tw(lab, 32) + 96; d.rounded_rectangle((x0 + 40, fy - 30, x0 + 40 + w_, fy + 30), 30, fill=A((40, 16, 18), ca), outline=A(RED, ca), width=3); _ico(d, "code", x0 + 76, fy, 13, RED, ca, 3); txt(d, (x0 + 100, fy), lab, 32, A(PT, ca), anchor="lm")
     if b.get("label"):
         tl, lab, hx = b["label"]; la = E(t, tl, .3)
         if la > .01: txt(d, (x1 - 60, fy), lab, 36, A(_hex_rgb(hx), la), anchor="rm")
@@ -445,7 +450,7 @@ def draw_flowmini(d, box, b, t, k):
         if kind == "pill":
             w_ = _tw(it["name"], 30) + 120; d.rounded_rectangle((cx - w_ / 2, cyy - 34 + dy, cx + w_ / 2, cyy + 34 + dy), 34, fill=A(col, al)); _ico(d, it.get("icon", "bolt"), cx - w_ / 2 + 42, cyy + dy, 13, (20, 22, 26), al, 3); txt(d, (cx + 20, cyy + dy), it["name"], 30, A((20, 22, 26), al))
         elif kind == "circle":
-            r = 62; d.ellipse((cx - r, cyy - r + dy, cx + r, cyy + r + dy), fill=A(lerp(CARDC, col, .25), al), outline=A(col, al), width=4); _ico(d, it.get("icon", "gear"), cx, cyy + dy, 26, col, al); txt(d, (cx, cyy + r + 32 + dy), it["name"], 28, A(col, al))
+            r = 62; d.ellipse((cx - r, cyy - r + dy, cx + r, cyy + r + dy), fill=A(lerp(CARDC, col, .25), al), outline=A(col, al), width=4); _ico(d, it.get("icon", "gear"), cx, cyy + dy, 26, col, al); txt(d, (cx, cyy + r + 32 + dy), it["name"], 28, A(_tx(col), al))
         else:
             w_ = max(300, _tw(it["name"], 30) + 130); d.rounded_rectangle((cx - w_ / 2 + 7, cyy - 44 + 7 + dy, cx + w_ / 2 + 7, cyy + 44 + 7 + dy), 24, fill=A(lerp(BASEC, col, .2), al)); d.rounded_rectangle((cx - w_ / 2, cyy - 44 + dy, cx + w_ / 2, cyy + 44 + dy), 24, fill=A(CARDC, al), outline=A(col, al), width=3)
             d.rectangle((cx - w_ / 2, cyy - 30 + dy, cx - w_ / 2 + 8, cyy + 30 + dy), fill=A(col, al)); _ico(d, it.get("icon", "doc"), cx - w_ / 2 + 44, cyy + dy, 17, col, al); txt(d, (cx - w_ / 2 + 78, cyy + dy), it["name"], _fit(it["name"], 30, w_ - 100, 16), A(PAPER, al), anchor="lm")

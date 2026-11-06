@@ -139,3 +139,39 @@ Config: `theme`, `bg_style`, `card_styles`, `signoff_1`, `signoff_2`.
 | `python3 engine/render.py <scenes> out.mp4`                    | render one video (env `FMT`, `CTRLH_T0/T1`)                                 |
 | `python3 engine/meta.py <scenes> out.md`                       | chapters, description, hashtags                                             |
 | `python3 engine/docs_gallery.py`                               | redraw the feature pictures                                                 |
+
+## 12. Paper theme + paper blocks (optional)
+
+Light "paper" look: cream background, dot grid, ink text, yellow highlighter.
+Enable: `"theme": "paper"` in the config, or `CTRLH_THEME=paper`. Orange highlighter: `CTRLH_ACCENT=#FF8A11`.
+The six paper blocks work on every theme (dark too); the flow blocks and legacy blocks are patched to stay readable on the light theme.
+
+![paper theme](images/theme-paper.png)
+
+| Block       | Fields                                                | Use it for                               |
+| ----------- | ----------------------------------------------------- | ---------------------------------------- |
+| `quote`     | `t, who, lines, hl=[(word,t)]`                        | quote card with highlighter on key words |
+| `chatwin`   | `t, title, ask, ask_t, who, lines=[(t,code)], cursor` | AI chat / coding-agent demo              |
+| `minichart` | `rows=[{t,label,kind:down/up,values}]`                | cost down / growth up                    |
+| `skeleton`  | `file, n, span, seed, hl`                             | code-shape skeleton ("so much code")     |
+| `filegrid`  | `files, cols, span, missing=(idx,t), pick=(idx,t)`    | project scale, missing file, pick one    |
+| `bigcount`  | `label, t0, t1, v0, v1, suffix, cell`                 | pixel-font big counter                   |
+
+Images: `images/feat-<block>.png` (16:9) and `images/feat-<block>-9x16.png`.
+Code: `engine/blocks_paper.py`; theme entry in `engine/themes.py`; background `paper` in `engine/bg_styles.py`.
+
+### Ready background image: `assets/backgrounds/hud_dark.png`
+
+Sharpened 1920x1080 version of the HUD circuit background (the small chips Docker / Compose / Linux are part of the picture). Use it with `"background_file": "assets/backgrounds/hud_dark.png"` in the config (16:9 only).
+
+### Live HUD background: `bg_style: "hud_live"` (default)
+
+![hud live](images/bg-hud-live.png)
+Animated version of the HUD circuit background (16:9 only): current pulses run along the orange traces, particles drift, icons light up in the 3x2 squares (bottom-left), a loading bar fills (top-right).
+**Chips (bottom) change with the topic.** For every scene the engine shows the tools that scene talks about:
+
+1. scene key `chips=["Laravel", "Sanctum"]` (max 3) wins; use it whenever you want exact names;
+2. otherwise the tools found in the scene text (list `HUD_TOOLS` in `engine/blocks_hud.py`, first mention first);
+3. otherwise the video-wide `TECH` list.
+   Chips cross-fade when they change between scenes. Static alternatives: `"bg_style": "circuit"` or `"background_file": "assets/backgrounds/hud_dark.png"` (chips baked in, not recommended).
+   Plate image: `assets/backgrounds/hud_plate.png` (override with `CTRLH_HUD_PLATE`). Size and render time are the same as the static background.

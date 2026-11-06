@@ -47,3 +47,14 @@ Every key becomes an environment variable (`ctrlh_config.py`), so `CTRLH_DISABLE
 ## Running with a local agent
 
 The engine needs only Python 3, Pillow, numpy and ffmpeg (no npm). An agent that works on your own machine can run the same commands; give it the skills in `skills/` and this folder.
+
+## Themes and paper blocks
+
+- Add a theme: one line in `engine/themes.py` (`accent, card, base, light`). `light=True` switches ink/gray text and the `paper` background.
+- Paper blocks live in `engine/blocks_paper.py` (loaded by `anim.py` like `blocks_flow.py`); add SFX in `engine/make_audio.py`.
+
+## Live HUD background and chips
+
+- Code: `engine/blocks_hud.py` (`HudLive`, `auto_chips`, `HUD_TOOLS`). Add a tool name to `HUD_TOOLS` so it becomes a chip automatically.
+- Speed of the pulse: `2 * math.pi * t / 4.4` in `HudLive.frame`; particles: `n = 120`; icons: `ICONS`; loading bar: `t / 6.5`.
+- Per scene: `dict(..., chips=["Laravel", "Docker"])`.

@@ -22,7 +22,23 @@ def _edge_mask(layer, dd, lo=0.45, span=0.4):
     a = np.asarray(layer).astype(np.float32); m = np.clip((dd - lo) / span, 0, 1); a[..., 3] *= np.clip(m * 1.25, 0, 1)
     return Image.fromarray(a.astype(np.uint8))
 
+def _paper(W, H, base, labels, font):
+    """light theme background: flat cream paper, faint dot grid, a few ink corner marks"""
+    im = Image.new("RGBA", (W, H), tuple(base) + (255,)); d = ImageDraw.Draw(im); S = W / 1920.0 if W > H else H / 1920.0; step = int(64 * S)
+    for x in range(step, W, step):
+        for y in range(step, H, step): d.ellipse((x - 2, y - 2, x + 2, y + 2), fill=(60, 56, 44, 40))
+    m = int(40 * S); L = int(70 * S)
+    for cx, cy, sx, sy in ((m, m, 1, 1), (W - m, m, -1, 1), (m, H - m, 1, -1), (W - m, H - m, -1, -1)):
+        d.line([(cx, cy), (cx + sx * L, cy)], fill=(20, 20, 18, 120), width=4); d.line([(cx, cy), (cx, cy + sy * L)], fill=(20, 20, 18, 120), width=4)
+    if labels and font:
+        f = ImageFont.truetype(font, int(26 * S)); y = int(H - (84 if W < H else 54)); x = 250 if W < H else 620
+        for tx in labels:
+            w = int(f.getlength(tx)) + 50; d.rounded_rectangle((x, y, x + w, y + 46), 23, outline=(20, 20, 18, 150), width=3); d.text((x + w / 2, y + 23), tx, font=f, fill=(20, 20, 18, 170), anchor="mm"); x += w + 24
+    return im
+
+
 def make(style, W, H, accent, base, labels=None, font=None):
+    if style == "paper": return _paper(W, H, base, labels, font)
     style = style if style in STYLES else "circuit"; rnd = random.Random(7)
     im, dd = _base(W, H, accent, base, glows=(style != "minimal")); AC = tuple(accent)
     L = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(L); S = W / 1920.0 if W > H else H / 1920.0

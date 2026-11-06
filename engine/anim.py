@@ -19,13 +19,15 @@ OR = _hex("CTRLH_ACCENT", _T["accent"])   # accent colour, e.g. CTRLH_ACCENT=#00
 OR2 = tuple(min(255, int(c + (255 - c) * 0.2)) for c in OR)   # lighter accent
 ORD = tuple(int(c * 0.67) for c in OR)   # darker accent (button depth)
 INK = (10, 11, 13); PAPER = (245, 245, 245)
+PT = (245, 245, 245)   # text on the dark panels (stays light in every theme)
+if _T.get("light"): PAPER = (18, 18, 16)   # light theme: PAPER is the TEXT / border colour, so it becomes ink
 CARDC = _hex("CTRLH_CARD_COLOR", _T["card"]); BASEC = _hex("CTRLH_BG_COLOR", _T["base"])   # card background colour, e.g. CTRLH_CARD_COLOR=#1B2A41
 CARD_NUM = tuple(int(c * 0.85) for c in CARDC); CARD_GLASS = tuple(min(255, c + 10) for c in CARDC)   # derived: `numbers` / `glass` card fills
 _ALL_STYLES = ["classic", "proposed", "glass", "numbers", "outline", "solid", "neon", "paper", "soft", "terminal", "steps", "iconbox"]
 _DEFAULT_STYLE = "classic"   # what someone who just installed the kit gets
 _cs = os.environ.get("CTRLH_CARD_STYLES", "").replace(" ", "").lower()   # e.g. glass | classic,numbers | all
 CARD_STYLES = _ALL_STYLES if _cs == "all" else ([x for x in _cs.split(",") if x in _ALL_STYLES] or [_DEFAULT_STYLE])
-GRAYC = (150, 156, 170); RED = (255, 92, 92); GRN = (80, 230, 140); AMB = (255, 196, 80); BLUE = (150, 200, 255); VIO = (176, 148, 255)
+GRAYC = (110, 106, 96) if _T.get("light") else (150, 156, 170); RED = (255, 92, 92); GRN = (80, 230, 140); AMB = (255, 196, 80); BLUE = (150, 200, 255); VIO = (176, 148, 255)
 # texts that are part of the brand / language; override with environment variables
 LBL_OK = os.environ.get("CTRLH_LABEL_OK", "صح"); LBL_BAD = os.environ.get("CTRLH_LABEL_WRONG", "غلط")
 LBL_CHAPTER = os.environ.get("CTRLH_LABEL_CHAPTER", "الجزء"); LBL_OF = os.environ.get("CTRLH_LABEL_OF", "من")   # chapter banner: "<label> 2 · <stage name>"
@@ -530,7 +532,7 @@ def draw_zoom(d, box, b, t, k):
     tpos = None
     for j, text in enumerate(b["lines"]):
         yy = y0 + 60 + j * g["s"] * 1.6 + g["s"] * 0.8 + dy
-        d.text((x0 + 30, yy), text, font=f, fill=A(RED if j == 0 else PAPER, al), anchor="lm")
+        d.text((x0 + 30, yy), text, font=f, fill=A(RED if j == 0 else PT, al), anchor="lm")
         if j == li and tgt in text:
             i0 = text.index(tgt); xa = x0 + 30 + f.getlength(text[:i0]); xb = xa + f.getlength(tgt)
             tpos = (xa, xb, yy)
@@ -547,7 +549,7 @@ def draw_zoom(d, box, b, t, k):
     lines2 = b.get("magnify", [tgt])
     s2 = int(R * 0.17)
     for j, ln in enumerate(lines2):
-        d.text((ccx, ccy + (j - (len(lines2) - 1) / 2) * s2 * 1.5), ln, font=F(MONO, s2), fill=A(PAPER if j else OR, za), anchor="mm")
+        d.text((ccx, ccy + (j - (len(lines2) - 1) / 2) * s2 * 1.5), ln, font=F(MONO, s2), fill=A(PT if j else OR, za), anchor="mm")
 
 
 def draw_phone(d, box, b, t, k):
@@ -556,7 +558,7 @@ def draw_phone(d, box, b, t, k):
     x0, y0, x1, y1 = box; dy = (1 - al) * 34 + bob(t, k)
     pw = min(x1 - x0, 400 if WIDE else 470); ph = (y1 - y0); cx = (x0 + x1) / 2
     px0, px1 = cx - pw / 2, cx + pw / 2
-    hard(d, (px0, y0, px1, y0 + ph), (16, 17, 21), OR, border=PAPER, a=al, r=54, off=10, bw=5, dy=dy)
+    hard(d, (px0, y0, px1, y0 + ph), (16, 17, 21), OR, border=PT, a=al, r=54, off=10, bw=5, dy=dy)
     d.rounded_rectangle((cx - 60, y0 + 18 + dy, cx + 60, y0 + 34 + dy), 8, fill=A((40, 42, 48), al))
     # screen header
     txt(d, (cx, y0 + 80 + dy), b.get("title", "App"), 28 if WIDE else 32, A(GRAYC, al))
@@ -564,7 +566,7 @@ def draw_phone(d, box, b, t, k):
     for j, (te, text, st) in enumerate(items):
         ia = E(t, te)
         if ia < 0.01: continue
-        col = {"bad": RED, "ok": GRN}.get(st, PAPER)
+        col = {"bad": RED, "ok": GRN}.get(st, PT)
         hh = 66 if WIDE else 80
         yy = iy + j * (hh + 18) + (1 - ia) * 18 + dy
         d.rounded_rectangle((px0 + 26, yy, px1 - 26, yy + hh), 18, fill=A((30, 32, 38), ia), outline=A(col if st else GRAYC, ia), width=3)
@@ -580,7 +582,7 @@ def draw_cta(d, box, b, t, k):
     x0, y0, x1, y1 = box; cx = (x0 + x1) / 2; cy = (y0 + y1) / 2
     w = min(1000, x1 - x0); h = 190 if WIDE else 230
     hard(d, (cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2), (18, 20, 25), GRAYC, border=GRAYC, a=al, r=34, off=10, bw=3, dy=(1 - al) * 28)
-    txt(d, (cx + w / 2 - 70, cy + (1 - al) * 28), "اكتبلي إجابتك في الكومنتات", 52 if WIDE else 54, A(PAPER, al), anchor="rm")
+    txt(d, (cx + w / 2 - 70, cy + (1 - al) * 28), "اكتبلي إجابتك في الكومنتات", 52 if WIDE else 54, A(PT, al), anchor="rm")
     if int(t * 2) % 2 == 0: d.rectangle((cx - w / 2 + 60, cy - 44, cx - w / 2 + 66, cy + 44), fill=A(OR, al))
 
 
@@ -604,7 +606,7 @@ def draw_compare(d, box, b, t, k):
         dy = (1 - pa) * 30; act = pi == 1
         col = OR if act else GRAYC
         hard(d, (bx0, by0, bx1, by1), (20, 22, 27), col if act else (40, 42, 48), border=col, a=pa, r=28, off=9 if act else 5, bw=4 if act else 3, dy=dy)
-        txt(d, ((bx0 + bx1) / 2, by0 + 48 + dy), title, 46 if WIDE else 52, A(OR if act else PAPER, pa))
+        txt(d, ((bx0 + bx1) / 2, by0 + 48 + dy), title, 46 if WIDE else 52, A(OR if act else PT, pa))
         d.line([(bx0 + 40, by0 + 92 + dy), (bx1 - 40, by0 + 92 + dy)], fill=A(col, pa * 0.6), width=3)
         n = len(items); area = (by1 - by0 - 110)
         for j, (te, text) in enumerate(items):
@@ -612,7 +614,7 @@ def draw_compare(d, box, b, t, k):
             if ia < 0.01: continue
             yy = by0 + 110 + area * (j + 0.5) / max(n, 1) + (1 - ia) * 16 + dy
             d.ellipse((bx1 - 64, yy - 9, bx1 - 46, yy + 9), fill=A(GRN if act else GRAYC, ia))
-            txt(d, (bx1 - 84, yy), text, 40 if WIDE else 46, A(PAPER, ia), anchor="rm")
+            txt(d, (bx1 - 84, yy), text, 40 if WIDE else 46, A(PT, ia), anchor="rm")
 
 
 def flow_geom(b, box):
@@ -638,9 +640,9 @@ def draw_flow(d, box, b, t, k):
         for st in arr:
             q = prog(t, st[0] + 0.85, st[0] + 1.35)
             if 0 < q < 1: pulse = max(pulse, 1 - q)
-        col = lerp(PAPER, OR, min(1, pulse * 1.5))
+        col = lerp(PT, OR, min(1, pulse * 1.5))
         hard(d, (cx - nw / 2, cy - nh / 2, cx + nw / 2, cy + nh / 2), CARDC, OR if pulse > 0 else (40, 42, 48), border=col, a=al, r=24, off=7, bw=4, dy=dy)
-        txt(d, (cx, cy + dy), lab, 34 if WIDE else 32, A(PAPER, al))
+        txt(d, (cx, cy + dy), lab, 34 if WIDE else 32, A(PT, al))
     for (te, i, j, lab) in b["steps"]:
         q = prog(t, te, te + 0.85)
         if q <= 0 or q >= 1: continue
@@ -649,7 +651,7 @@ def draw_flow(d, box, b, t, k):
         for tr in range(1, 5):
             e2 = ss(max(0, q - tr * 0.04)); x2 = xs[i] + (xs[j] - xs[i]) * e2
             d.ellipse((x2 - 9, ya - 9, x2 + 9, ya + 9), fill=A(OR, 0.18 * (5 - tr)))
-        d.ellipse((x - 13, ya - 13, x + 13, ya + 13), fill=A(OR, 1), outline=A(PAPER, 1), width=3)
+        d.ellipse((x - 13, ya - 13, x + 13, ya + 13), fill=A(OR, 1), outline=A(PT, 1), width=3)
         txt(d, (x, ya - 64), lab, 28 if WIDE else 26, A(OR, 1))
 
 
@@ -882,11 +884,11 @@ def draw_poll(d, box, b, t, k):
         if b.get("nopct"):
             pl = 0.5 + 0.5 * math.sin(t * 4 + i * 3.14)
             d.rounded_rectangle((bx0, by0, bx1, by0 + bh), 16, outline=A(OR, al * (0.5 + 0.5 * pl)), width=4)
-            d.text((bx0 + 20, by0 + bh / 2), lab, font=F(ARB, 32 if WIDE else 36) if not lab.isascii() else F(MONO, 30 if WIDE else 34), fill=A(PAPER, al), anchor="lm", direction="rtl" if not lab.isascii() else None, language="ar" if not lab.isascii() else None) if False else txt(d, ((bx0 + bx1) / 2, by0 + bh / 2), lab, 32 if WIDE else 36, A(PAPER, al))
+            d.text((bx0 + 20, by0 + bh / 2), lab, font=F(ARB, 32 if WIDE else 36) if not lab.isascii() else F(MONO, 30 if WIDE else 34), fill=A(PT, al), anchor="lm", direction="rtl" if not lab.isascii() else None, language="ar" if not lab.isascii() else None) if False else txt(d, ((bx0 + bx1) / 2, by0 + bh / 2), lab, 32 if WIDE else 36, A(PT, al))
             continue
         if wv > 4: d.rounded_rectangle((bx0, by0, bx0 + wv, by0 + bh), 16, fill=A(OR if i == b.get("win", 0) else GRAYC, al))
-        d.text((bx0 + 20, by0 + bh / 2), lab, font=F(MONO, 28 if WIDE else 34), fill=A(INK if wv > 200 else PAPER, al), anchor="lm")
-        d.text((bx1 - 20, by0 + bh / 2), "%d%%" % int(pct * q), font=F(MONO, 28 if WIDE else 34), fill=A(PAPER, al), anchor="rm")
+        d.text((bx0 + 20, by0 + bh / 2), lab, font=F(MONO, 28 if WIDE else 34), fill=A(INK if wv > 200 else PT, al), anchor="lm")
+        d.text((bx1 - 20, by0 + bh / 2), "%d%%" % int(pct * q), font=F(MONO, 28 if WIDE else 34), fill=A(PT, al), anchor="rm")
 
 
 def draw_predict(d, box, b, t, k):
@@ -976,7 +978,7 @@ def draw_note(d, box, b, t, k):
     x0, y0, x1, y1 = box; dy = (1 - al) * 26; AM = (255, 196, 80)
     hard(d, (x0, y0, x1, y1), (36, 28, 14), AM, border=AM, a=al, r=26, off=9, bw=4, dy=dy)
     cy = (y0 + y1) / 2 + dy; d.ellipse((x0 + 34, cy - 24, x0 + 82, cy + 24), fill=A(AM, al)); d.text((x0 + 58, cy), "!", font=F(MONO, 34), fill=A(INK, al), anchor="mm")
-    txt(d, ((x0 + x1) / 2 + 40, cy), b["text"], 44 if WIDE else 50, A(PAPER, al))
+    txt(d, ((x0 + x1) / 2 + 40, cy), b["text"], 44 if WIDE else 50, A(PT, al))
 
 
 DRAW["note"] = draw_note
@@ -1089,9 +1091,10 @@ def corner_logo(im, t, T_END):
 
 def make_bg(tech_labels):
     import bg_styles
-    custom = bool(os.environ.get("CTRLH_BG_STYLE")) or OR != (255, 138, 17) or BASEC != (13, 14, 16)
+    custom = bool(os.environ.get("CTRLH_BG_STYLE")) or _T.get("light") or OR != (255, 138, 17) or BASEC != (13, 14, 16)
+    if os.environ.get("CTRLH_BG_STYLE", "").lower() == "hud_live" and WIDE: return Image.new("RGBA", (W, H), (10, 10, 10, 255))   # drawn live by HudLive
     if os.environ.get("BGFILE") and WIDE: return Image.open(os.environ["BGFILE"]).convert("RGBA")
-    if custom: return bg_styles.make(os.environ.get("CTRLH_BG_STYLE", "circuit").lower(), W, H, OR, BASEC, tech_labels, MONO)
+    if custom: return bg_styles.make(os.environ.get("CTRLH_BG_STYLE", "paper" if _T.get("light") else "circuit").lower(), W, H, OR, BASEC, tech_labels, MONO)
     if WIDE: return Image.open(SD + "backgrounds/default.png").convert("RGBA")
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
     base = np.zeros((H, W, 3), np.float32) + np.array([13, 14, 16], np.float32)
@@ -1833,7 +1836,10 @@ EXTRA_H.update({
 
 
 
-exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'blocks_flow.py'), encoding='utf-8').read(), 'blocks_flow.py', 'exec'))   # flow / system blocks (titlevs, split, chain, hub, pipeline, deviceflow, codeann, flowmini)
+for _bf in ('blocks_flow.py', 'blocks_paper.py', 'blocks_hud.py'): exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), _bf), encoding='utf-8').read(), _bf, 'exec'))   # flow / system blocks (titlevs, split, chain, hub, pipeline, deviceflow, codeann, flowmini)
+
+
+exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'blocks_paper.py'), encoding='utf-8').read(), 'blocks_paper.py', 'exec'))   # paper blocks (quote, chatwin, minichart, skeleton, filegrid, bigcount)
 
 
 class Video:
@@ -1842,6 +1848,8 @@ class Video:
         # clip window (auto-split parts / short tests): CTRLH_T0..CTRLH_T1 seconds of the full timeline; frame times stay GLOBAL so nothing else changes
         self.t_off = float(os.environ.get("CTRLH_T0") or 0); self.t_stop = min(float(os.environ.get("CTRLH_T1") or dur), dur)
         self.N = int(round(FPS * (self.t_stop - self.t_off))); self.bg = make_bg(tech)
+        self.hud = HudLive() if (os.environ.get('CTRLH_BG_STYLE', '').lower() == 'hud_live' and WIDE) else None
+        self.chips = [auto_chips(s_, tech) for s_ in self.scenes] if self.hud else []
         _dis = {x.strip() for x in os.environ.get("CTRLH_DISABLED_BLOCKS", "").split(",") if x.strip()}   # config "disabled_blocks": block kinds the engine drops (e.g. shock, poll)
         if _dis:
             def _drop(bl): return [dict(b_, items=_drop(b_["items"])) if b_["k"] in ("row", "tiles") else b_ for b_ in bl if b_["k"] not in _dis]
@@ -1949,6 +1957,14 @@ class Video:
             OV.alpha_composite(g.filter(ImageFilter.GaussianBlur(8)))
             return
 
+    def _paper_a(self, k, t):
+        sc = self.scenes; s = sc[k]
+        if not s.get("paper"): return 0.0
+        a = 1.0
+        if k == 0 or not sc[k - 1].get("paper"): a = min(a, ss(prog(t, s["t0"], s["t0"] + 0.34)) if k > 0 else 1.0)
+        if k == len(sc) - 1 or not sc[k + 1].get("paper"): a = min(a, 1 - ss(prog(t, s["t1"] - 0.28, s["t1"])) if k < len(sc) - 1 else 1.0)
+        return a
+
     def frame(self, i):
         t = i / FPS + self.t_off
         if t >= self.t_end: return end_frame(t, self.t_end, self.tag1, self.tag2)
@@ -1990,13 +2006,21 @@ class Video:
         if pin > 0.003 and ent == "up": S = S.transform((W, H), Image.AFFINE, (1, 0, 0, 0, 1, -int(H * 0.12 * pin)), Image.BILINEAR); S.putalpha(S.getchannel("A").point(lambda v, p=pin: int(v * (1 - 0.8 * p))))
         elif pin > 0.003: S = mblur(S, 150 * pin, int(W * 0.18 * pin * (1 if ent == "right" else -1)), 1 - 0.8 * pin)
         elif pout > 0.003: S = mblur(S, 220 * pout, int(-W * 0.22 * pout), 1 - pout)
-        im = self.bg.copy()
-        bg_motion(im, t)
+        if self.hud is not None:
+            ca_ = 1.0
+            if k > 0 and self.chips[k] != self.chips[k - 1]: ca_ = min(ca_, ss(prog(t, s["t0"] + 0.1, s["t0"] + 0.45)))
+            if k < len(self.scenes) - 1 and self.chips[k] != self.chips[k + 1]: ca_ = min(ca_, 1 - ss(prog(t, s["t1"] - 0.4, s["t1"] - 0.05)))
+            im = self.hud.frame(t, self.chips[k], ca_)
+        else:
+            im = self.bg.copy()
+            bg_motion(im, t)
+        pa_ = self._paper_a(k, t)   # optional paper look (scene key paper=True): cream background, cross-faded at the scene edges
         im.alpha_composite(tabs_layer(t, self.stages, self.st_times, self.t_end, self.marks))
+        if pa_ > 0.003: im.alpha_composite(Image.new("RGBA", (W, H), CREAM + (int(255 * pa_),)))
         for b_ in self.btn:
             if not any(x_.get("abs") and x_["k"] == "button" for x_ in s["blocks"]): abs_button(OV, b_, t)
         self.link_ghost(OV, t, k)
-        chapter_banner(OV, t, self.st_times, self.stages)
+        if pa_ < 0.5: chapter_banner(OV, t, self.st_times, self.stages)
         im.alpha_composite(S)
         im.alpha_composite(OV)
         corner_logo(im, t, self.t_end)

@@ -1,4 +1,4 @@
-# Ctrl + H Video Kit Claude skills
+# Ctrl + H Video Kit
 
 Repository: **https://github.com/heshamadel1/ctrl-h**
 
@@ -16,7 +16,7 @@ Documentation: [docs/FEATURES.md](docs/FEATURES.md) (every feature with a pictur
 
 ---
 
-## What is in v1.0.0
+## What is in v1.0.1
 
 | Area            | What you get                                                                                                                                                                                                                                          |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -306,7 +306,7 @@ The kit ships two Claude skills in `skills/`. A skill is a folder with a `SKILL.
 1. Copy both folders from `skills/` into your Claude skills directory: `~/.claude/skills/` (so you get `~/.claude/skills/ctrlh-video-style/SKILL.md` and `~/.claude/skills/ctrlh-thumbnail-style/SKILL.md`). Restart Claude Code. In Claude apps that accept skills (Settings > Capabilities > Skills), upload the two folders (or zip each folder) instead.
 2. Open Claude **inside this repo folder** so it can run `engine/` and see `examples/` and `assets/`.
 3. First request: Claude finds no `ctrlh.config.json` and asks you the setup questions (identity, colours, card styles, background, brand assets), saves them, shows a 6-second preview, and only then builds your video.
-4. To update later: pull the repo, copy the new `skills/` folders over the old ones, restart. Check the version in `VERSION` and `CHANGELOG.md` (this release: **v1.0.0**).
+4. To update later: pull the repo, copy the new `skills/` folders over the old ones, restart. Check the version in `VERSION` and `CHANGELOG.md` (this release: **v1.0.1**).
 
 ### What `ctrlh-video-style` contains
 
@@ -555,3 +555,5 @@ Then pick your colors and fonts (section 7).
 - Code: MIT (see `LICENSE`; owner's decision, 2026-10-30).
 - Fonts: SIL Open Font License.
 - Ctrl + H name and logo: These are the channel owner's brand assets. Do not reuse them without permission.
+
+- Live HUD background (`hud_live`, default) with chips that change per scene — see docs/FEATURES.md section 10.

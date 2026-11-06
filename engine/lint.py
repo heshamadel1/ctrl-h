@@ -43,7 +43,7 @@ for m in issues: print("LINT:", m)
 if not issues: print("LINT: clean")
 if opt("--sheet"):
     from PIL import Image
-    ts = [s["t0"] + (s["t1"] - s["t0"]) * 0.8 for s in SC][:12]; ims = []
+    ts = [s["t0"] + (s["t1"] - s["t0"]) * 0.8 for s in SC]; ims = []
     for t in ts:
         ims.append(Image.fromarray(V.frame(int(round((t - V.t_off) * FPS)))))
     cw = 640 if ims[0].width > ims[0].height else 360; ch = int(ims[0].height * cw / ims[0].width); cols = 3 if cw == 640 else 4

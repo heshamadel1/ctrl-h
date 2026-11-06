@@ -18,16 +18,19 @@
       [
         "arch",
         "chain",
+        "chatwin",
         "codeann",
         "deviceflow",
         "diff",
         "er",
+        "filegrid",
         "flowmini",
         "http",
         "hub",
         "pipeline",
         "queue",
         "recap",
+        "skeleton",
         "split",
         "versus"
       ]
@@ -63,15 +66,18 @@
       [
         "arch",
         "chain",
+        "chatwin",
         "codeann",
         "deviceflow",
         "diff",
         "er",
+        "filegrid",
         "flowmini",
         "http",
         "hub",
         "pipeline",
         "queue",
+        "skeleton",
         "split",
         "versus"
       ]

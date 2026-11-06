@@ -217,6 +217,47 @@ for s_ in RP.SC:
             if b.get("counter"): thud(b["counter"][0], 0.1)
         elif k_ == "flowmini":
             for i_, it_ in enumerate(b["items"]): add(pluck([660.0, 784.0, 880.0, 988.0][i_ % 4], 0.4, 1.0), it_["t"], 0.05)
+        elif k_ == "quote":
+            add(whoosh(0.3, 600, 3000, up=True), b["t"], 0.05); add(click(2200, 1.0, 0.05), b["t"] + 0.3, 0.08)
+            for h_ in b.get("hi", []): add(click(1800, 0.9, 0.05), h_[0], 0.06)
+        elif k_ == "chatwin":
+            add(whoosh(0.3, 600, 3000, up=True), b["t"], 0.05); add(click(2000, 1.0, 0.05), b.get("prompt_t", b["t"] + 0.4), 0.08)
+            for c_ in b.get("code", []): add(click(2600, 0.8, 0.03), c_[0], 0.05)
+        elif k_ == "bars":
+            for c_ in b["cards"]: add(whoosh(0.4, 500, 3000, up=True), c_["t"], 0.05); ding(c_["t"] + 0.9, 0.05) if c_.get("kind", "up") == "up" else thud(c_["t"] + 0.9, 0.08)
+        elif k_ == "skeleton":
+            add(whoosh(0.4, 600, 3500, up=True), b["t"], 0.04)
+            n_ = b.get("lines", 10); t0_, t1_ = b.get("t0", b["t"] + 0.4), b.get("t1", b["t"] + 3)
+            for i_ in range(n_): add(click(2600, 0.7, 0.03), t0_ + (t1_ - t0_) * i_ / n_, 0.035)
+        elif k_ == "filegrid":
+            n_ = len(b["files"]); t0_, t1_ = b.get("t0", b["t"]), b.get("t1", b["t"] + 2)
+            for i_ in range(0, n_, 2): add(click(2400, 0.7, 0.03), t0_ + (t1_ - t0_) * i_ / n_, 0.035)
+            if b.get("missing"): thud(b["missing"][0], 0.1)
+        elif k_ == "bigcount":
+            add(whoosh(0.3, 600, 3000, up=True), b["t"], 0.04)
+            t0_, t1_ = b.get("t0", b["t"]), b.get("t1", b["t"] + 2)
+            for i_ in range(8): add(click(2800, 0.6, 0.03), t0_ + (t1_ - t0_) * i_ / 8, 0.03)
+        elif k_ == "quote":
+            add(whoosh(0.4, 500, 3200, up=True), b["t"], 0.05); add(click(2200, 1.0, 0.05), b["t"] + 0.3, 0.08)
+            for _w, tw_ in b.get("hl", []): add(click(1800, 1.0, 0.05), tw_, 0.06)
+        elif k_ == "chatwin":
+            add(whoosh(0.4, 500, 3200, up=True), b["t"], 0.05); add(click(2200, 0.9, 0.05), b.get("ask_t", b["t"] + 0.3), 0.08)
+            for l_ in b["lines"]: add(click(2800, 0.5, 0.03), l_[0], 0.05); add(click(2600, 0.5, 0.03), l_[0] + 0.25, 0.04); add(click(3000, 0.5, 0.03), l_[0] + 0.5, 0.04)
+        elif k_ == "minichart":
+            for r_ in b["rows"]:
+                add(whoosh(0.4, 500, 3000, up=True), r_["t"], 0.05)
+                for j_ in range(5): add(pluck(440.0 + 60 * j_, 0.25, 1.0), r_["t"] + 0.3 + 0.18 * j_, 0.04)
+        elif k_ == "skeleton":
+            n_ = b.get("n", 9)
+            for i_ in range(n_): add(click(2600, 0.5, 0.03), b["t"] + 0.3 + b.get("span", 2.5) * i_ / n_, 0.04)
+        elif k_ == "filegrid":
+            n_ = len(b["files"])
+            for i_ in range(0, n_, 2): add(click(2400, 0.5, 0.03), b["t"] + b.get("span", 2.5) * i_ / n_, 0.04)
+            if b.get("missing"): thud(b["missing"][1], 0.1)
+            if b.get("pick"): ding(b["pick"][1], 0.06)
+        elif k_ == "bigcount":
+            for i_ in range(8): add(click(2000 + 150 * i_, 0.4, 0.03), b.get("t0", b["t"]) + (b.get("t1", b["t"] + 2) - b.get("t0", b["t"])) * i_ / 8, 0.04)
+            ding(b.get("t1", b["t"] + 2), 0.06)
         elif k_ == "icon3d":
             for it_ in b["items"]: add(pluck(784.0, 0.4, 1.0), it_["t"], 0.05); add(click(2800, 0.8, 0.04), it_["t"], 0.05)
         elif k_ == "button":
