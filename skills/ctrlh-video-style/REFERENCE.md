@@ -4,22 +4,22 @@ Pictures live in `docs/images/` of the kit (https://github.com/heshamadel1/ctrl-
 
 ## 1. Card styles (scene `style=`; 12; the allowed ones come from `card_styles` in the config)
 
-| #   | style    | looks like                                                | use for                            | picture                    |
-| --- | -------- | --------------------------------------------------------- | ---------------------------------- | -------------------------- |
-| 1   | classic  | thick border, hard coloured shadow, round check/cross     | good / bad statements              | style-1-classic.png        |
-| 2   | proposed | status bar on the edge, `tag` pill, `key` word underlined | rules, definitions (set tag + key) | style-2-proposed.png       |
-| 3   | glass    | translucent, light border                                 | calm explanations                  | style-3-glass.png          |
-| 4   | numbers  | big faint 01/02/03 + right/wrong pill                     | steps, mistakes lists              | style-4-numbers.png        |
-| 5   | outline  | thin outline, nearly transparent                          | calm lines                         | cards-12-styles-orange.png |
-| 6   | solid    | accent fill, dark text                                    | one key statement                  | same sheet                 |
-| 7   | neon     | glowing border                                            | emphasis, good/bad                 | same sheet                 |
-| 8   | paper    | light card, dark text                                     | high contrast                      | same sheet                 |
-| 9   | soft     | status border + glow + badge                              | right/wrong lists                  | same sheet                 |
-| 10  | terminal | `exit 0` / `exit 1`, `$`                                  | commands, results                  | same sheet                 |
-| 11  | steps    | numbered circle + progress underline                      | ordered steps                      | same sheet                 |
-| 12  | iconbox  | coloured block with check/cross/number                    | right/wrong lists                  | same sheet                 |
+| #   | style                            | looks like                                                | use for                            | picture                          |
+| --- | -------------------------------- | --------------------------------------------------------- | ---------------------------------- | -------------------------------- |
+| 1   | plain_dark (old `classic`)       | thick border, hard coloured shadow, round check/cross     | good / bad statements              | cards-dark.png / cards-paper.png |
+| 2   | tag_header (old `proposed`)      | status bar on the edge, `tag` pill, `key` word underlined | rules, definitions (set tag + key) | cards-dark.png / cards-paper.png |
+| 3   | glass_blur (old `glass`)         | translucent, light border                                 | calm explanations                  | cards-dark.png / cards-paper.png |
+| 4   | numbered_list (old `numbers`)    | big faint 01/02/03 + right/wrong pill                     | steps, mistakes lists              | cards-dark.png / cards-paper.png |
+| 5   | outline_thin (old `outline`)     | thin outline, nearly transparent                          | calm lines                         | cards-dark.png / cards-paper.png |
+| 6   | solid_orange (old `solid`)       | accent fill, dark text                                    | one key statement                  | cards-dark.png / cards-paper.png |
+| 7   | neon_glow (old `neon`)           | glowing border                                            | emphasis, good/bad                 | cards-dark.png / cards-paper.png |
+| 8   | paper_note (old `paper`)         | light card, dark text                                     | high contrast                      | cards-dark.png / cards-paper.png |
+| 9   | soft_rounded (old `soft`)        | status border + glow + badge                              | right/wrong lists                  | cards-dark.png / cards-paper.png |
+| 10  | terminal_window (old `terminal`) | `exit 0` / `exit 1`, `$`                                  | commands, results                  | cards-dark.png / cards-paper.png |
+| 11  | step_arrows (old `steps`)        | numbered circle + progress underline                      | ordered steps                      | cards-dark.png / cards-paper.png |
+| 12  | icon_box (old `iconbox`)         | coloured block with check/cross/number                    | right/wrong lists                  | cards-dark.png / cards-paper.png |
 
-Sheets: `cards-12-styles-orange.png`, `cards-12-styles-violet.png`, `overview-16x9.png`, `overview-9x16.png`, `themes.png`, `backgrounds.png`.
+Sheets: `cards-dark.png`, `cards-paper.png`, `overview-16x9.png`, `overview-16x9.png`, `cards-paper.png`, `backgrounds.png`.
 
 ## 2. Card shapes (scene `grid=` / `cw=`; automatic rotation when 2+ cards)
 
@@ -46,7 +46,7 @@ Sheets: `cards-12-styles-orange.png`, `cards-12-styles-violet.png`, `overview-16
 - `matrix`: `t, cols=[{name,color}], rows=[{t, label, cells=["ok"|"bad"|"mid"|text|(kind,note)]}]`.
 - `tabcard`: `t, title, tabs=[{t, label, scene: play|rec|edit|script|icon kind}]`. `icon3d`: `t, items=[{t, kind, label}]` kinds play camera scissors code doc db; `cols_reel`.
 
-## 6. Technical blocks (picture `new-blocks-technical-16x9.png` / `-9x16.png`, single: block-er / queue / arch / http-diff / recap .png)
+## 6. Technical blocks (picture `blocks-sheet-1.png`)
 
 - `arch`: `t, nodes=[{t, name, sub, color, state=[(t,'ok'|'err'|'idle')]}], reqs=[(t, from_idx, to_idx, label[, 'err'|'back'])]`. A dot travels, the receiving node flashes. For Next.js -> Laravel -> PostgreSQL, request paths, Browser -> API.
 - `er`: `t, tables=[{t, name, color, cols=[(name, 'PK'|'FK'|'')]}], links=[(t, from_table_idx, to_table_idx, 'fk_col')]`. FK lines run under the tables. For Multi-Tenant `tenant_id`, relations.
@@ -55,7 +55,7 @@ Sheets: `cards-12-styles-orange.png`, `cards-12-styles-violet.png`, `overview-16
 - `queue`: `t, worker, queue_name, done_name, jobs=[{name, t_in, t_start, t_done}]`. For background jobs.
 - `recap`: `t, title, items=[(t, text)]` (Arabic allowed). Last content scene before the end card.
 
-## 6b. Flow and system blocks (engine/blocks_flow.py; pictures feat-<name>.png / -9x16.png; demo examples/v9_flow_scenes.py)
+## 6b. Flow and system blocks (engine/blocks_flow.py; pictures `blocks-sheet-2.png`, `blocks-sheet-3.png`; demo examples/v9_flow_scenes.py)
 
 Use them whenever the script describes a system: two things compared on scaling/deploy/calls -> `split` (+ `titlevs` header); handlers/middleware/validation steps -> `chain`; one controller touching many services -> `hub`; ordered steps with a change (NEW/v2) -> `pipeline`; a request that passes checks -> `deviceflow`; bad code with several reasons to change -> `codeann`; Command/Message/Handler -> `flowmini`. Fields: see docs/FEATURES.md section 8. Names / code / tags Latin, Arabic only in captions, labels and deviceflow steps. Icons: user cart card code search gauge link clip server mail gear cube bell truck key lock shield db check x clock doc bolt.
 
@@ -72,7 +72,7 @@ Fixed Subscribe / Follow buttons (times via `SUB_T`, `FOL_T`), chapter banner "Ø
 
 ## 9. Themes, backgrounds, formats
 
-Themes: orange, cyan, blue, violet, pink, red, gold, green, mono (or `accent`/`card_color`/`bg_color`). Backgrounds: circuit, grid, hex, dots, waves, aurora, blueprint, minimal, or own PNG. Formats: `FMT=wide` 1920x1080, `FMT=reel` 1080x1920, `OUT_W` rescales.
+Themes: orange (main dark) and paper_orange (light paper, orange highlighter); other colours via `accent`/`card_color`/`bg_color`. Backgrounds: circuit, grid, hex, dots, waves, aurora, blueprint, minimal, or own PNG. Formats: `FMT=wide` 1920x1080, `FMT=reel` 1080x1920, `OUT_W` rescales.
 
 ## 10. Demo scene files (copy from them)
 
@@ -80,8 +80,14 @@ Themes: orange, cyan, blue, violet, pink, red, gold, green, mono (or `accent`/`c
 
 ## Paper theme + paper blocks (optional, only when asked)
 
-Light theme: `theme: paper`. Blocks: `quote` (t,who,lines,hl), `chatwin` (t,title,ask,ask_t,lines,cursor), `minichart` (rows), `skeleton` (file,n,span,hl), `filegrid` (files,cols,missing,pick), `bigcount` (label,t0,t1,v0,v1). Use for scale/overwhelm moments, quotes, AI-chat demos, cost/growth. Default stays dark orange.
+Light theme: `theme: paper_orange`. Blocks: `quote` (t,who,lines,hl), `chatwin` (t,title,ask,ask_t,lines,cursor), `minichart` (rows), `skeleton` (file,n,span,hl), `filegrid` (files,cols,missing,pick), `bigcount` (label,t0,t1,v0,v1). Use for scale/overwhelm moments, quotes, AI-chat demos, cost/growth. Default stays dark orange.
 
 ## Live background + topic chips (default `bg_style: hud_live`)
 
 The HUD background is animated; its bottom chips show the tools of each scene. Rule: when a scene discusses specific tools, add `chips=["Tool1", "Tool2"]` (max 3, exact names as in the script); otherwise the engine picks tools from the scene text, then falls back to `TECH`. Do not hard-code chips in the background image.
+
+## Theme choice rule
+
+Before making any video, ask the owner which theme: MAIN dark (`hud_live`, orange) or PAPER (`theme: paper`). Set `theme` / `bg_style` in the config or env accordingly (`CTRLH_THEME=paper`).
+
+Card choice rule: with the theme question, also ask: all cards / ONE card look (`card_style`) / certain families only (`disabled_blocks`). See docs/CATALOG.md.

@@ -19,6 +19,7 @@ OR = _hex("CTRLH_ACCENT", _T["accent"])   # accent colour, e.g. CTRLH_ACCENT=#00
 OR2 = tuple(min(255, int(c + (255 - c) * 0.2)) for c in OR)   # lighter accent
 ORD = tuple(int(c * 0.67) for c in OR)   # darker accent (button depth)
 INK = (10, 11, 13); PAPER = (245, 245, 245)
+CREAM = (240, 234, 216)   # wash used by the per-scene paper look (scene key paper=True)
 PT = (245, 245, 245)   # text on the dark panels (stays light in every theme)
 if _T.get("light"): PAPER = (18, 18, 16)   # light theme: PAPER is the TEXT / border colour, so it becomes ink
 CARDC = _hex("CTRLH_CARD_COLOR", _T["card"]); BASEC = _hex("CTRLH_BG_COLOR", _T["base"])   # card background colour, e.g. CTRLH_CARD_COLOR=#1B2A41
@@ -26,7 +27,8 @@ CARD_NUM = tuple(int(c * 0.85) for c in CARDC); CARD_GLASS = tuple(min(255, c + 
 _ALL_STYLES = ["classic", "proposed", "glass", "numbers", "outline", "solid", "neon", "paper", "soft", "terminal", "steps", "iconbox"]
 _DEFAULT_STYLE = "classic"   # what someone who just installed the kit gets
 _cs = os.environ.get("CTRLH_CARD_STYLES", "").replace(" ", "").lower()   # e.g. glass | classic,numbers | all
-CARD_STYLES = _ALL_STYLES if _cs == "all" else ([x for x in _cs.split(",") if x in _ALL_STYLES] or [_DEFAULT_STYLE])
+import card_names as _cn
+CARD_STYLES = _ALL_STYLES if _cs == "all" else ([c for c in (_cn.canon(x) for x in _cs.split(",")) if c in _ALL_STYLES] or [_DEFAULT_STYLE])
 GRAYC = (110, 106, 96) if _T.get("light") else (150, 156, 170); RED = (255, 92, 92); GRN = (80, 230, 140); AMB = (255, 196, 80); BLUE = (150, 200, 255); VIO = (176, 148, 255)
 # texts that are part of the brand / language; override with environment variables
 LBL_OK = os.environ.get("CTRLH_LABEL_OK", "صح"); LBL_BAD = os.environ.get("CTRLH_LABEL_WRONG", "غلط")
@@ -380,7 +382,7 @@ def draw_card(d, box, b, t, k):
             elif ok is not None: badge(d, x0 + 52, cy, ok, al, r=24); body(cx + 28)
             else: body(cx)
         elif st == "terminal":
-            d.rounded_rectangle((x0, y0d, x1, y1d), 14, fill=A((10, 11, 14), al), outline=A(lerp((60, 63, 72), OR, hl), al), width=3)
+            d.rounded_rectangle((x0, y0d, x1, y1d), 14, fill=A((232, 228, 214) if _T.get("light") else (10, 11, 14), al), outline=A(lerp((60, 63, 72), OR, hl), al), width=3)
             d.rounded_rectangle((x0, y0d, x0 + 10, y1d), 5, fill=A(col, al))
             lab = "exit 1" if ok is False else ("exit 0" if ok else "$")
             if narrow: d.text((x0 + 28, y0d + 30), lab, font=F(MONO, 22), fill=A(col, al), anchor="lm"); body(cx, dyy=18)
@@ -1892,7 +1894,7 @@ class Video:
                     else: nb_.append(it_)
                 s_["blocks"] = nb_
         for si_, s_ in enumerate(scenes):
-            st_ = s_.get("style", "classic"); n_ = 0
+            st_ = _cn.canon(s_.get("style", "classic")) or "classic"; n_ = 0
             if st_ not in CARD_STYLES: st_ = CARD_STYLES[si_ % len(CARD_STYLES)]   # style not allowed by CTRLH_CARD_STYLES: rotate through the allowed ones
             def tag_(bl):
                 nonlocal n_

@@ -16,6 +16,16 @@ HUD_TOOLS = ["Laravel", "PHP", "Docker", "Compose", "Linux", "Redis", "MySQL", "
              "Horizon", "Pest", "PHPUnit", "Postman", "UUID", "ULID", "Auto-Increment", "Pipeline", "Queue", "Cache", "CORS", "HTTP", "Webhook"]
 
 
+# small icon for known tools (names of `_ico` in blocks_flow.py); unknown tools get no icon
+HUD_ICONS = {"laravel": "code", "php": "code", "docker": "cube", "compose": "cube", "linux": "server", "redis": "bolt", "mysql": "db", "postgresql": "db",
+             "sqlite": "db", "mongodb": "db", "database": "db", "sql": "db", "nosql": "db", "sanctum": "shield", "passport": "shield", "jwt": "key", "oauth": "key",
+             "authentication": "user", "authorization": "lock", "git": "link", "github": "link", "api": "link", "rest": "link", "graphql": "link", "nginx": "server",
+             "kubernetes": "cube", "react": "code", "next.js": "code", "vue": "code", "node.js": "code", "typescript": "code", "javascript": "code", "python": "code",
+             "stripe": "card", "queue": "clip", "kafka": "clip", "rabbitmq": "clip", "cache": "bolt", "uuid": "key", "ulid": "key", "auto-increment": "gauge",
+             "webhook": "bell", "pest": "check", "phpunit": "check", "postman": "mail", "horizon": "gauge", "tailwind": "gear", "eloquent": "db", "migrations": "db", "models": "cube"}
+def chip_icon(name): return HUD_ICONS.get(name.lower())
+
+
 def _hud_strings(o, out):
     if isinstance(o, str): out.append(o)
     elif isinstance(o, dict):
@@ -47,6 +57,18 @@ class HudLive:
         a = _np.asarray(pl).astype(_np.float32)
         r, g, b = a[..., 0], a[..., 1], a[..., 2]
         o = _np.clip((r - _np.maximum(g * 1.25, b * 1.6) - 25) / 110.0, 0, 1)
+        if tuple(OR) != (255, 138, 17):   # recolour: orange hues of the plate -> the accent hue (saturation / brightness kept)
+            import colorsys
+            hsv = _np.asarray(pl.convert("HSV")).astype(_np.float32)
+            ha = colorsys.rgb_to_hsv(*[c / 255.0 for c in OR])[0] * 255.0
+            hh, ss_ = hsv[..., 0], hsv[..., 1]
+            wgt = _np.clip((ss_ - 40) / 90.0, 0, 1) * ((hh > 2) & (hh < 40))
+            hsv[..., 0] = hh * (1 - wgt) + ha * wgt
+            a = _np.asarray(Image.fromarray(hsv.astype(_np.uint8), "HSV").convert("RGB")).astype(_np.float32)
+        if tuple(BASEC) != (13, 14, 16):  # tint the dark parts toward the theme base colour
+            dk = _np.clip(1 - a.mean(-1) / 70.0, 0, 1)[..., None]
+            a = a + dk * (_np.array(BASEC, _np.float32) - _np.array((13, 14, 16), _np.float32))
+        a = _np.clip(a, 0, 255)
         om = Image.fromarray((o * 255).astype(_np.uint8))
         self.core = (_np.asarray(om.filter(ImageFilter.GaussianBlur(1.2))).astype(_np.float32) / 255.0)
         self.bloom = (_np.asarray(om.filter(ImageFilter.GaussianBlur(14))).astype(_np.float32) / 255.0)
@@ -96,8 +118,9 @@ class HudLive:
         if ca > 0.003 and chips:
             f = F(MONO, 23); x = 972
             for tx in chips:
-                wd = int(f.getlength(tx)) + 46
+                ic = chip_icon(tx); wd = int(f.getlength(tx)) + 46 + (30 if ic else 0)
                 d.rounded_rectangle((x, 961, x + wd, 1005), 22, fill=(8, 8, 8, int(150 * ca)), outline=OR + (int(200 * ca),), width=2)
-                d.text((x + wd / 2, 983), tx, font=f, fill=(255, 255, 255, int(225 * ca)), anchor="mm"); x += wd + 22
+                if ic: _ico(d, ic, x + 28, 983, 9, OR, int(235 * ca), 2)
+                d.text((x + wd / 2 + (14 if ic else 0), 983), tx, font=f, fill=(255, 255, 255, int(225 * ca)), anchor="mm"); x += wd + 22
         im.alpha_composite(L)
         return im

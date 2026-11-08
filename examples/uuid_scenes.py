@@ -38,7 +38,7 @@ SC = [
  dict(style="numbers", t0=S[11], t1=S[15], stage=0, head="ID Collision", head_t=S[11] + 0.2, blocks=[
    c(S[11], "الرقم 1 مش نفس الشخص", False, words=[(S[11] + 1.8, "نفس")]),
    c(S[12], "دمج البيانات = ID Collision", False, tag="Merge", key="Collision"),
-   {"k": "strike", "t": S[13], "t_strike": S[13] + 2.8, "t_right": S[13] + 3.6, "wrong": "نفس الـ ID = نفس الـ Record", "right": "نفس الـ ID لأكتر من Record"},
+   {"k": "strike", "t": S[13], "t_strike": S[13] + 2.8, "t_right": S[13] + 3.6, "wrong": "نفس الـ ID = نفس الـ Record", "right": "نفس الـ ID لأكتر من Record"},
    {"k": "note", "t": S[14] + 0.4, "text": "فيه حلول بس بتزود التعقيد"}]),
  # ---- 1 UUID ----
  dict(style="proposed", t0=S[15], t1=S[19], stage=1, head="هنا بييجي UUID", head_t=S[15] + 0.2, blocks=[
@@ -57,13 +57,13 @@ SC = [
  dict(style="paper", t0=S[22], t1=S[23], stage=1, head="مش حل سحري", head_t=S[22] + 0.2, blocks=[
    {"k": "strike", "t": S[22] + 0.4, "t_strike": S[22] + 3.0, "t_right": S[22] + 4.2, "wrong": "UUID حل سحري للدمج", "right": "لسه محتاج Sync + Conflicts"}]),
  # ---- 2 التغيير ----
- dict(style="soft", t0=S[23], t1=S[26], stage=2, head="غيّرنا الـ ID في Users بس؟", head_t=S[23] + 0.2, blocks=[
+ dict(style="soft", t0=S[23], t1=S[26], stage=2, head="غيّرنا الـ ID في Users بس؟", head_t=S[23] + 0.2, blocks=[
    {"k": "er", "t": S[25] + 0.2, "tables": [
       {"t": S[25] + 0.2, "name": "users", "color": CY, "cols": [("id", "PK"), ("email", "")]},
       {"t": S[25] + 0.8, "name": "orders", "color": OR_, "cols": [("id", "PK"), ("user_id", "FK"), ("total", "")]}],
     "links": [(S[25] + 2.5, 1, 0, "user_id")]},
-   c(S[23] + 3.0, "تغيير نوع الـ ID في Users بس؟", False),
-   c(S[24], "لأ، الـ Primary Key مرتبط بجداول تانية", True, tag="FK", key="Primary Key")]),
+   c(S[23] + 3.0, "تغيير نوع الـ ID في Users بس؟", False),
+   c(S[24], "لأ، الـ Primary Key مرتبط بجداول تانية", True, tag="FK", key="Primary Key")]),
  dict(style="neon", t0=S[26], t1=S[27], stage=2, head="Foreign Key مختلف", head_t=S[26] + 0.2, blocks=[
    {"k": "diff", "t": S[26] + 0.3, "file": "create_orders_table.php", "lines": [
       (S[26] + 0.8, " ", "// orders migration"),
@@ -90,29 +90,29 @@ SC = [
       {"t": S[34] + 1.4, "name": "users", "color": CY, "cols": [("id", "PK"), ("email", "")]}],
     "links": [(S[34] + 6.0, 0, 1, "tokenable_id")]},
    c(S[34] + 3.0, "ID التوكن Auto-Increment", True),
-   c(S[34] + 8.0, "الـ Relationship بيتعامل مع UUID", True),
+   c(S[34] + 8.0, "الـ Relationship بيتعامل مع UUID", True),
    c(S[35], "اختار حسب طبيعة كل جدول", None, tag="Rule", key="كل جدول")]),
  # ---- 4 الأمان ----
  dict(style="classic", t0=S[36], t1=S[40], stage=4, head="UUID مش Security", head_t=S[36] + 0.2, blocks=[
    {"k": "mystery", "t": S[36] + 0.8, "q": "UUID = أمان؟", "a": "مش لوحده", "t_reveal": S[38] + 0.2},
    c(S[39], "UUID مجرد Identifier مش Authorization", False, tag="UUID", key="Identifier")]),
- dict(style="outline", t0=S[40], t1=S[43], stage=4, head="معرفة الـ ID مش حماية", head_t=S[40] + 0.2, blocks=[
+ dict(style="outline", t0=S[40], t1=S[43], stage=4, head="معرفة الـ ID مش حماية", head_t=S[40] + 0.2, blocks=[
    {"k": "deviceflow", "t": S[40] + 0.3,
     "phone": {"title": "طلب Order", "fields": [("doc", "550e8400-e29b...")], "button": "Open", "press_t": S[40] + 1.8},
     "api": {"t": S[40] + 2.0, "name": "Orders API", "sub": "GET /api/orders/{uuid}", "color": "#31B3E8"},
     "steps": [{"t": S[41], "tag": "Authentication", "label": "نعرف مين المستخدم", "icon": "user", "color": "#B07CFF"},
               {"t": S[42], "tag": "Authorization", "label": "عنده صلاحية؟", "icon": "lock", "color": "#F2C230"}]}]),
- dict(style="soft", t0=S[43], t1=S[45], stage=4, head="في الـ Multi-Tenant", head_t=S[43] + 0.2, blocks=[
+ dict(style="soft", t0=S[43], t1=S[45], stage=4, head="في الـ Multi-Tenant", head_t=S[43] + 0.2, blocks=[
    {"k": "chain", "t": S[43] + 0.3, "start": "-> Request", "payload": "{ uuid }", "steps": [
       {"t": S[43] + 0.9, "name": "AuthenticationHandler", "sub": "who is the user", "icon": "user", "color": "#B07CFF", "err": (S[43] + 7.0, "401 Unauthorized")},
       {"t": S[43] + 2.4, "name": "AuthorizationHandler", "sub": "has permission", "icon": "lock", "color": "#F2C230", "err": (S[43] + 7.6, "403 Forbidden")},
       {"t": S[43] + 4.2, "name": "MembershipHandler", "sub": "member of Tenant / Store", "icon": "shield", "color": "#3DDC84"}]},
-   c(S[44], "معرفة الـ UUID مش معناها صلاحية وصول", False)]),
+   c(S[44], "معرفة الـ UUID مش معناها صلاحية وصول", False)]),
  # ---- 5 الخلاصة ----
  dict(style="proposed", t0=S[45], t1=S[49], stage=5, head="UUID أفضل في كل الحالات؟", head_t=S[45] + 0.2, blocks=[
    {"k": "matrix", "t": S[46] + 0.6, "cols": [{"name": "Auto-Increment", "color": OR_}, {"name": "UUID", "color": CY}], "rows": [
-      {"t": S[47] + 0.6, "label": "حجم الـ ID", "cells": ["ok", "bad"]},
-      {"t": S[47] + 3.0, "label": "حجم الـ Index", "cells": ["ok", "bad"]},
+      {"t": S[47] + 0.6, "label": "حجم الـ ID", "cells": ["ok", "bad"]},
+      {"t": S[47] + 3.0, "label": "حجم الـ Index", "cells": ["ok", "bad"]},
       {"t": S[47] + 5.4, "label": "سهولة القراءة", "cells": ["ok", "bad"]},
       {"t": S[48] + 0.4, "label": "توليد مستقل", "cells": ["bad", "ok"]},
       {"t": S[48] + 4.0, "label": "الأنظمة الموزعة", "cells": ["bad", "ok"]}]}]),

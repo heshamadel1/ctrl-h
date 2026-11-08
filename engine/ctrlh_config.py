@@ -3,7 +3,7 @@ already understands (a variable you set yourself on the command line always wins
 Search order: $CTRLH_CONFIG, ./ctrlh.config.json, ../ctrlh.config.json, <kit root>/ctrlh.config.json"""
 import os, json
 KEYMAP = {"theme": "CTRLH_THEME", "accent": "CTRLH_ACCENT", "card_color": "CTRLH_CARD_COLOR", "bg_color": "CTRLH_BG_COLOR",
-          "card_styles": "CTRLH_CARD_STYLES", "bg_style": "CTRLH_BG_STYLE", "background_file": "BGFILE", "assets": "CTRLH_ASSETS",
+          "card_styles": "CTRLH_CARD_STYLES", "card_style": "CTRLH_CARD_STYLES", "bg_style": "CTRLH_BG_STYLE", "background_file": "BGFILE", "assets": "CTRLH_ASSETS",
           "font_ar": "CTRLH_FONT_AR", "font_latin": "CTRLH_FONT_LATIN", "signoff_1": "CTRLH_SIGNOFF_1", "signoff_2": "CTRLH_SIGNOFF_2",
           "label_ok": "CTRLH_LABEL_OK", "label_wrong": "CTRLH_LABEL_WRONG", "label_chapter": "CTRLH_LABEL_CHAPTER",
           "out_w": "OUT_W", "subscribe_t": "SUB_T", "follow_t": "FOL_T",
@@ -22,6 +22,15 @@ def load():
     try: CONFIG = json.load(open(p, encoding="utf-8"))
     except Exception: return
     CONFIG_PATH = p; base = os.path.dirname(p)
+    # series: {"backend": {"theme": "blue", ...}} chosen by CTRLH_SERIES or config "series_name"; its keys override the base config
+    ser = os.environ.get("CTRLH_SERIES") or CONFIG.get("series_name")
+    if ser and isinstance(CONFIG.get("series"), dict) and ser in CONFIG["series"]: CONFIG = dict(CONFIG, **CONFIG["series"][ser])
+    # a theme with its own signature background replaces the default live HUD (unless bg_style_locked)
+    try:
+        import themes
+        th = themes.THEMES.get((os.environ.get("CTRLH_THEME") or CONFIG.get("theme") or "").lower(), {})
+        if th.get("bg") and not CONFIG.get("bg_style_locked") and CONFIG.get("bg_style", "hud_live") == "hud_live": CONFIG = dict(CONFIG, bg_style=th["bg"])
+    except Exception: pass
     for k, env in KEYMAP.items():
         v = CONFIG.get(k)
         if v in (None, "", []): continue

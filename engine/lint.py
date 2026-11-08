@@ -8,15 +8,19 @@ here = os.path.dirname(os.path.abspath(__file__)); sys.path[:0] = [os.getcwd(), 
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 def opt(n, d=None): return sys.argv[sys.argv.index(n) + 1] if n in sys.argv else d
 if opt("--fmt"): os.environ["FMT"] = opt("--fmt")
-N = importlib.import_module(args[0])
+import scenefile; N = scenefile.load(args[0])
 import ctrlh_config
 from anim import Video, FPS
 import io, contextlib
+_missing = [i for i in range(len(N.STAGES)) if not any(x['stage'] == i for x in N.SC)]
+if _missing: sys.exit('LINT: STAGES %s have no scene (every stage needs at least one scene with stage=<index>)' % [N.STAGES[i] for i in _missing])
 buf = io.StringIO()
 with contextlib.redirect_stdout(buf):
     V = Video(N.SC, N.STAGES, N.DUR, N.T_END, N.TAG1, N.TAG2, N.TECH, getattr(N, "SUB_T", None), getattr(N, "FOL_T", None))
 issues = [l.replace("LINT: ", "") for l in buf.getvalue().splitlines() if l.startswith("LINT:")]
 SC = N.SC
+import anim as _an
+if not os.path.exists(_an.SD + "logo_ch.png"): issues.append("logo missing: put your logo at %slogo_ch.png (or set CTRLH_ASSETS); without it the corner logo and the end card show an empty frame" % _an.SD)
 def kinds(bl):
     for b in bl:
         yield b["k"]
@@ -27,6 +31,27 @@ for i, s in enumerate(SC):
     for b in s["blocks"]:
         tb = b.get("t", b.get("t0"))
         if tb is not None and not b.get("abs") and not (s["t0"] - 0.05 <= tb <= s["t1"]): issues.append("scene %d: %s block appears at %.1f, outside the scene (%.1f-%.1f)" % (i, b["k"], tb, s["t0"], s["t1"]))
+
+# ---- smarter text / structure rules
+import re
+def _strs(o, out):
+    if isinstance(o, str): out.append(o)
+    elif isinstance(o, dict):
+        for v in o.values(): _strs(v, out)
+    elif isinstance(o, (list, tuple)):
+        for v in o: _strs(v, out)
+AR = "\u0600-\u06FF"
+for i, s in enumerate(SC):
+    tx = []; _strs({k: v for k, v in s.items() if k not in ("style", "stage")}, tx)
+    for t_ in tx:
+        if re.search("\u0648(?=[A-Za-z])", t_) and re.search("(^|\\s)\u0648[A-Za-z]", t_): issues.append("scene %d: Arabic waw glued to a Latin word in %r (renders as a stray glyph; use a space or '+')" % (i, t_[:40]))
+        if re.search("[A-Za-z0-9)]\\s\u0648\\s[A-Za-z]", t_): issues.append("scene %d: lone waw between Latin words in %r (use '+' or a comma)" % (i, t_[:40]))
+        if re.search("\u0627\u0644\u0640 [A-Za-z]", t_): issues.append("scene %d: use a non-breaking space between the Arabic prefix and the Latin word in %r" % (i, t_[:40]))
+    if not s["blocks"]: issues.append("scene %d: has no blocks (empty screen)" % i)
+    starts = sorted(b.get("t", b.get("t0", s["t0"])) for b in s["blocks"] if not b.get("abs"))
+    if s["t1"] - s["t0"] > 25 and len(starts) < 2: issues.append("scene %d: %.0f s long with fewer than 2 things appearing (static screen)" % (i, s["t1"] - s["t0"]))
+    for b in s["blocks"]:
+        if b["k"] == "card" and len(b.get("text", "")) > 46: issues.append("scene %d: card text is %d chars (max ~46): %r" % (i, len(b["text"]), b["text"][:30]))
 if SC and SC[-1]["t1"] > N.DUR + 0.05: issues.append("last scene ends after DUR")
 types = json.load(open(os.path.join(here, "..", "profiles", "video-types.json"), encoding="utf-8"))
 vt = os.environ.get("CTRLH_VIDEO_TYPE", "explainer"); T = types.get(vt)

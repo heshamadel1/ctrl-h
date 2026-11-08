@@ -2,9 +2,12 @@ import os, sys, wave, math, importlib.util
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(sys.argv[1])))
-spec = importlib.util.spec_from_file_location("rp", sys.argv[1])
-RP = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(RP)
+if sys.argv[1].endswith(".json"):
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import scenefile; RP = scenefile.load_json(sys.argv[1]); spec = None
+else:
+    spec = importlib.util.spec_from_file_location("rp", sys.argv[1])
+    RP = importlib.util.module_from_spec(spec)
+if spec: spec.loader.exec_module(RP)
 
 SR = 48000
 T = RP.DUR

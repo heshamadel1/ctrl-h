@@ -1,4 +1,4 @@
-# Ctrl + H Video Kit
+# Ctrl + H Video Kit · v2.0.0
 
 Repository: **https://github.com/heshamadel1/ctrl-h**
 
@@ -12,11 +12,11 @@ Platforms: YouTube (`ctrlh-dev`), TikTok, Instagram, Facebook.
 
 Content: Programming, Software Engineering, Back-End Development.
 
-Documentation: [docs/FEATURES.md](docs/FEATURES.md) (every feature with a picture) and [docs/CUSTOMIZE.md](docs/CUSTOMIZE.md) (how to change things).
+Documentation: [docs/CATALOG.md](docs/CATALOG.md) (every card, block, theme, background, command with a name), [docs/FEATURES.md](docs/FEATURES.md) (every feature with a picture) [docs/CUSTOMIZE.md](docs/CUSTOMIZE.md) (how to change things).
 
 ---
 
-## What is in v1.0.1
+## What is in v2.0.0
 
 | Area            | What you get                                                                                                                                                                                                                                          |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -30,36 +30,52 @@ Documentation: [docs/FEATURES.md](docs/FEATURES.md) (every feature with a pictur
 | Retention       | shock hook, promise, mystery, predict, strike, before/after, poll, challenge, chips, corner, buttons, recap                                                                                                                                           |
 | Planning / info | `plan.py` (script to visuals), `meta.py` (chapters, description, hashtags)                                                                                                                                                                            |
 | Docs            | `docs/FEATURES.md` (every feature with a picture), `docs/CUSTOMIZE.md` (how to change things)                                                                                                                                                         |
+| Logo check      | `lint.py` warns when `logo_ch.png` is missing (set `CTRLH_ASSETS`)                                                                                                                                                                                    |
 | Skills          | `ctrlh-video-style` (+ `REFERENCE.md`), `ctrlh-thumbnail-style`                                                                                                                                                                                       |
 
 The screen-darkening effect `dims` is off (it looked like the screen turning off); `"dims": true` in the config brings it back.
 
 ---
 
+## Quick usage (new in 2.0.0)
+
+```bash
+python3 engine/suggest.py script.txt                 # 1. scene ideas from your script (optional)
+python3 engine/align.py scenes voice.wav             # 2. align scene times to the voice (optional)
+python3 engine/preview.py scenes                     # 3. fast key frames
+python3 engine/build.py scenes --vo voice.wav        # 4. lint + render + SFX + mux + meta.md + chapters.txt
+python3 engine/srt.py scenes video.srt               # 5. subtitles (optional)
+```
+
+With Claude: send the script and the WAV. Claude asks which **theme** (`orange` / `paper_orange`) and which **cards** (all, ONE look, or families A-H), then does all of the above. Scenes can be `.py`, `.json`, or JavaScript (`node/ctrlh.js`). Everything you can pick is in [docs/CATALOG.md](docs/CATALOG.md).
+
+---
+
 ## Themes, styles and backgrounds
 
-|               | Before                | Now                                                                                                                                 |
-| ------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Who it is for | the Ctrl + H channel  | **anyone**                                                                                                                          |
-| First use     | edit files by hand    | **Claude asks you** (name, colours, cards, background, logo) and saves `ctrlh.config.json`                                          |
-| Colours       | orange + black        | **9 themes** (orange, cyan, blue, violet, pink, red, gold, green, mono) or your own `#RRGGBB`                                       |
-| Card styles   | 4                     | **12**: classic, proposed, glass, numbers + outline, solid, neon, paper, soft, terminal, steps, iconbox; choose one, several or all |
-| Backgrounds   | 1 image per tech      | **8 styles for any colour**: circuit, grid, hex, dots, waves, aurora, blueprint, minimal (or your own image)                        |
-| Blocks        | cards + 3 infographic | + `versus`, `matrix`, `tabcard`, `icon3d`                                                                                           |
-| Default       | all cards             | **one style (`classic`)** until you choose                                                                                          |
+|               | Before                | Now                                                                                                                                                                                                                                 |
+| ------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Who it is for | the Ctrl + H channel  | **anyone**                                                                                                                                                                                                                          |
+| First use     | edit files by hand    | **Claude asks you** (name, colours, cards, background, logo) and saves `ctrlh.config.json`                                                                                                                                          |
+| Themes        | 9 colour themes       | **2 themes**: `orange` (main dark) and `paper_orange` (light paper); own colours with `accent` / `card_color` / `bg_color`                                                                                                          |
+| Card styles   | 4                     | **12 named looks** (C01-C12): plain_dark, tag_header, glass_blur, numbered_list, outline_thin, solid_orange, neon_glow, paper_note, soft_rounded, terminal_window, step_arrows, icon_box; ONE for the whole video with `card_style` |
+| Backgrounds   | 1 image per tech      | **animated `hud_live`** (chips with icons that change per scene) + paper, circuit, grid, hex, dots, waves, aurora, blueprint, terminal, minimal, or your own image                                                                  |
+| Blocks        | cards + 3 infographic | 8 families A-H (infographic, compare, technical, flow, code, interactive, paper)                                                                                                                                                    |
+| Tools         | build                 | + `align`, `suggest`, `preview`, `srt`, `chapters.txt`, JSON scenes, Node helper, smarter lint                                                                                                                                      |
+| Asking        | none                  | the skill asks which theme and which cards before every video                                                                                                                                                                       |
 
-Pictures: `docs/images/themes.png`, `docs/images/backgrounds.png`, `docs/images/cards-12-styles-orange.png`, `docs/images/cards-12-styles-violet.png`.
+**Reference for everything (names and codes): [docs/CATALOG.md](docs/CATALOG.md).**
 
-![themes](docs/images/themes.png)
+![cards dark](docs/images/cards-dark.png)
+![cards paper](docs/images/cards-paper.png)
 ![backgrounds](docs/images/backgrounds.png)
-![cards](docs/images/cards-12-styles-violet.png)
 
 ### First run (what happens)
 
 1. Install the skills (section 6) and open Claude inside this folder.
-2. Ask for your first video. Claude sees there is no `ctrlh.config.json` and asks: **identity** (name, handle, platforms, language, topics), **colours** (theme or custom hex), **card styles** (one, several or all), **background**, **logo/monogram/fonts/end-card lines**. It shows the preview pictures first.
+2. Ask for your first video. Claude sees there is no `ctrlh.config.json` and asks: **identity** (name, handle, platforms, language, topics), **theme** (`orange` or `paper_orange`, or a custom hex), **card styles** (one, several or all), **background**, **logo/monogram/fonts/end-card lines**. It shows the preview pictures first.
 3. Claude saves the answers (`python3 engine/ctrlh_setup.py ...`), renders a short preview so you can see it, and only then builds your video.
-4. Later changes: just say `use only glass and neon cards`, `switch to the cyan theme`, `background hex`, `re-run setup`.
+4. Later changes: just say `use only glass_blur and neon_glow cards`, `switch to the paper_orange theme`, `background hex` (or `hud_live`), `re-run setup`.
 
 No Claude? Run `python3 engine/ctrlh_setup.py` and answer the questions in the terminal, or copy `profiles/ctrlh.config.json` and edit it. The config keys are listed in the skill and in `engine/ctrlh_config.py`; any `CTRLH_*` environment variable still overrides the config for one command.
 
@@ -306,7 +322,7 @@ The kit ships two Claude skills in `skills/`. A skill is a folder with a `SKILL.
 1. Copy both folders from `skills/` into your Claude skills directory: `~/.claude/skills/` (so you get `~/.claude/skills/ctrlh-video-style/SKILL.md` and `~/.claude/skills/ctrlh-thumbnail-style/SKILL.md`). Restart Claude Code. In Claude apps that accept skills (Settings > Capabilities > Skills), upload the two folders (or zip each folder) instead.
 2. Open Claude **inside this repo folder** so it can run `engine/` and see `examples/` and `assets/`.
 3. First request: Claude finds no `ctrlh.config.json` and asks you the setup questions (identity, colours, card styles, background, brand assets), saves them, shows a 6-second preview, and only then builds your video.
-4. To update later: pull the repo, copy the new `skills/` folders over the old ones, restart. Check the version in `VERSION` and `CHANGELOG.md` (this release: **v1.0.1**).
+4. To update later: pull the repo, copy the new `skills/` folders over the old ones, restart. Check the version in `VERSION` and `CHANGELOG.md` (this release: **v2.0.0**).
 
 ### What `ctrlh-video-style` contains
 
@@ -314,6 +330,7 @@ The kit ships two Claude skills in `skills/`. A skill is a folder with a `SKILL.
 | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | First run setup                                       | the questions to ask, how to save `ctrlh.config.json`, all config keys                                                                                                                                           |
 | Owner profile, platforms, content, voice generator    | who the channel is for, YouTube / TikTok / Instagram / Facebook, Egyptian Arabic, Google AI Studio Gemini Flash TTS settings                                                                                     |
+| Theme choice                                          | the skill asks which theme before each video: main dark (hud_live) or paper                                                                                                                                      |
 | Typical request flow                                  | post -> voiceover script -> WAV -> build video -> deliver with thumbnail and a summary of the interactive features                                                                                               |
 | Layout and quality rules 1-9                          | text inside cards, nothing below the frame, free button times, no dark marks, numbers equal the voice, Latin-only code, contact sheet before render, playlist cover, mandatory technical blocks                  |
 | Output                                                | 1920x1080 and 1080x1920, 30 fps, H.264 + AAC, length = voiceover length, no captions, no opening card, 30 MiB upload limit                                                                                       |
@@ -343,7 +360,7 @@ The kit ships two Claude skills in `skills/`. A skill is a folder with a `SKILL.
 - `Only check frames at 10, 40 and 90 seconds, do not render the full video yet.`
 - `Do not render any video, only update the engine / skill.`
 - `Give me the chapters and the description for YouTube.`
-- `Switch to the cyan theme / use only glass and neon cards / re-run setup.`
+- `Switch to the paper_orange theme / use only glass_blur and neon_glow cards / re-run setup.`
 
 ### Typical session
 
@@ -384,13 +401,13 @@ Run any `frames` or `video` command and read the `LINT:` lines: they tell you wh
 
 The saved config belongs to the **current channel** (the folder it lives in). Another channel = another folder with its own `ctrlh.config.json` (or point to it with `CTRLH_CONFIG=/path/ctrlh.config.json`).
 
-You can change the config at any time **without editing the skills**: say it to Claude ("use only glass and neon cards", "switch to the cyan theme", "background hex"), run `python3 engine/ctrlh_setup.py` again, or edit `ctrlh.config.json` by hand. The skill files stay the same.
+You can change the config at any time **without editing the skills**: say it to Claude ("use only glass_blur and neon_glow cards", "switch to the paper_orange theme", "background hex"), run `python3 engine/ctrlh_setup.py` again, or edit `ctrlh.config.json` by hand. The skill files stay the same.
 
 These are the environment variables (no code editing). Put them in front of any command:
 
 | What                                                                           | Variable            | Example                                               |
 | ------------------------------------------------------------------------------ | ------------------- | ----------------------------------------------------- |
-| Colour theme (orange, cyan, blue, violet, pink, red, gold, green, mono)        | `CTRLH_THEME`       | `CTRLH_THEME=violet`                                  |
+| Theme (`orange`, `paper_orange`)                                               | `CTRLH_THEME`       | `CTRLH_THEME=paper_orange`                            |
 | Accent color (default orange `#FF8A11`)                                        | `CTRLH_ACCENT`      | `CTRLH_ACCENT=#00B8D9`                                |
 | Background style (circuit, grid, hex, dots, waves, aurora, blueprint, minimal) | `CTRLH_BG_STYLE`    | `CTRLH_BG_STYLE=hex`                                  |
 | Background base colour                                                         | `CTRLH_BG_COLOR`    | `CTRLH_BG_COLOR=#0A0F1E`                              |
@@ -406,7 +423,7 @@ These are the environment variables (no code editing). Put them in front of any 
 Examples:
 
 ```bash
-# cyan brand + 1280x720 output
+# custom cyan accent + 1280x720 output
 CTRLH_ACCENT=#00B8D9 OUT_W=1280 FMT=wide python3 lk_anim.py video v720.mp4
 
 # 4K output
@@ -419,28 +436,28 @@ CTRLH_ACCENT=#00B8D9 BGFILE=../assets/backgrounds/bg_cyan.png FMT=wide python3 l
 
 ### Everything the engine can draw (with pictures)
 
-All pictures are in `docs/images/` (16:9 and 9:16 versions, plus `overview-16x9.png` and `overview-9x16.png`). They are made from `examples/showcase_scenes.py`; re-make them with `CTRLH_CARD_STYLES=all FMT=wide python3 examples/showcase_anim.py frames out 5 11 17 23 29 35 41 45 50 55`.
+All pictures are in `docs/images/` (16:9 and 9:16 versions, plus `overview-16x9.png` and `overview-16x9.png`). They are made from `examples/showcase_scenes.py`; re-make them with `CTRLH_CARD_STYLES=all FMT=wide python3 examples/showcase_anim.py frames out 5 11 17 23 29 35 41 45 50 55`.
 
 ![overview](docs/images/overview-16x9.png)
 
-![the 12 card styles](docs/images/cards-12-styles-orange.png)
+![the 12 card styles](docs/images/cards-dark.png)
 
 **Count: 12 card styles + 3 card shapes (+1 legacy) + 3 infographic blocks + 4 newer blocks (`versus`, `matrix`, `tabcard`, `icon3d`) + 6 technical blocks (`arch`, `er`, `http`, `diff`, `queue`, `recap`).**
 
-| #   | Card style | What it looks like                                            | Best for                         | Picture                                  |
-| --- | ---------- | ------------------------------------------------------------- | -------------------------------- | ---------------------------------------- |
-| 1   | `classic`  | thick border, hard colored shadow, round check/cross badge    | good / bad statements            | `docs/images/style-1-classic.png`        |
-| 2   | `proposed` | status bar on the edge, small `tag` pill, key word underlined | rules and definitions            | `docs/images/style-2-proposed.png`       |
-| 3   | `glass`    | translucent card, light border                                | calm explanations, closing lines | `docs/images/style-3-glass.png`          |
-| 4   | `numbers`  | big faint index 01/02/03 + right/wrong pill                   | steps and mistakes lists         | `docs/images/style-4-numbers.png`        |
-| 5   | `outline`  | thin outline, nearly transparent fill                         | calm lines                       | `docs/images/cards-12-styles-orange.png` |
-| 6   | `solid`    | filled with the accent colour, dark text                      | one key statement                | same sheet                               |
-| 7   | `neon`     | glowing accent border                                         | good / bad, emphasis             | same sheet                               |
-| 8   | `paper`    | light card, dark text                                         | high contrast                    | same sheet                               |
-| 9   | `soft`     | status-colour border, soft glow, round badge                  | right / wrong lists              | same sheet                               |
-| 10  | `terminal` | terminal line: `exit 0` / `exit 1`, `$`                       | commands and results             | same sheet                               |
-| 11  | `steps`    | numbered circle on the edge, progress underline               | ordered steps                    | same sheet                               |
-| 12  | `iconbox`  | coloured block with check / cross / number                    | right / wrong lists              | same sheet                               |
+| #   | Card style | What it looks like                                            | Best for                         | Picture                            |
+| --- | ---------- | ------------------------------------------------------------- | -------------------------------- | ---------------------------------- |
+| 1   | `classic`  | thick border, hard colored shadow, round check/cross badge    | good / bad statements            | `docs/images/style-1-classic.png`  |
+| 2   | `proposed` | status bar on the edge, small `tag` pill, key word underlined | rules and definitions            | `docs/images/style-2-proposed.png` |
+| 3   | `glass`    | translucent card, light border                                | calm explanations, closing lines | `docs/images/style-3-glass.png`    |
+| 4   | `numbers`  | big faint index 01/02/03 + right/wrong pill                   | steps and mistakes lists         | `docs/images/style-4-numbers.png`  |
+| 5   | `outline`  | thin outline, nearly transparent fill                         | calm lines                       | `docs/images/cards-dark.png`       |
+| 6   | `solid`    | filled with the accent colour, dark text                      | one key statement                | same sheet                         |
+| 7   | `neon`     | glowing accent border                                         | good / bad, emphasis             | same sheet                         |
+| 8   | `paper`    | light card, dark text                                         | high contrast                    | same sheet                         |
+| 9   | `soft`     | status-colour border, soft glow, round badge                  | right / wrong lists              | same sheet                         |
+| 10  | `terminal` | terminal line: `exit 0` / `exit 1`, `$`                       | commands and results             | same sheet                         |
+| 11  | `steps`    | numbered circle on the edge, progress underline               | ordered steps                    | same sheet                         |
+| 12  | `iconbox`  | coloured block with check / cross / number                    | right / wrong lists              | same sheet                         |
 
 | Card shape (several cards in one scene) | Layout                                         | Picture                           |
 | --------------------------------------- | ---------------------------------------------- | --------------------------------- |
@@ -462,9 +479,7 @@ All pictures are in `docs/images/` (16:9 and 9:16 versions, plus `overview-16x9.
 | `tabcard`   | one card with tabs; a cursor presses each tab and a small scene changes inside (`play`, `rec`, `edit`, `script`, or any icon3d kind) | `docs/images/block-tabcard.png` |
 | `icon3d`    | row of flat tiles with depth edge, shadow, bobbing + tilt (`play camera scissors code doc db`)                                       | `docs/images/block-icon3d.png`  |
 
-![new blocks](docs/images/new-blocks-16x9.png)
-
-![technical blocks](docs/images/new-blocks-technical-16x9.png)
+![sheet](docs/images/blocks-sheet-1.png)
 
 | Technical block | For                                                                               | Key fields (all text inside is Latin)                                                    |
 | --------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |

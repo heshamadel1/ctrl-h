@@ -1,11 +1,11 @@
 """Background styles for any accent / base colour, 16:9 and 9:16.
-make(style, W, H, accent, base, labels=None) -> RGBA PIL image.   styles: circuit grid hex dots waves aurora blueprint minimal"""
+make(style, W, H, accent, base, labels=None) -> RGBA PIL image.   styles: circuit grid hex dots waves aurora blueprint terminal minimal"""
 import math, random, numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 STYLES = {"circuit": "grid + circuit traces and nodes along the edges", "grid": "bold technical grid with corner glow",
           "hex": "hexagon lattice fading toward the centre", "dots": "dot matrix, brighter near the edges",
           "waves": "flowing wave lines at top and bottom", "aurora": "soft blurred colour bands, no lines",
-          "blueprint": "fine blueprint grid, corner marks and construction lines", "minimal": "plain gradient and vignette only"}
+          "blueprint": "fine blueprint grid, corner marks and construction lines", "terminal": "scanlines, faint code columns at the edges, [ ] corner brackets", "minimal": "plain gradient and vignette only"}
 
 def _base(W, H, accent, base, glows=True):
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
@@ -40,7 +40,7 @@ def _paper(W, H, base, labels, font):
 def make(style, W, H, accent, base, labels=None, font=None):
     if style == "paper": return _paper(W, H, base, labels, font)
     style = style if style in STYLES else "circuit"; rnd = random.Random(7)
-    im, dd = _base(W, H, accent, base, glows=(style != "minimal")); AC = tuple(accent)
+    im, dd = _base(W, H, accent, base, glows=(style not in ("minimal", "terminal"))); AC = tuple(accent)
     L = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(L); S = W / 1920.0 if W > H else H / 1920.0
     def node(x, y, r=7, a=120):
         d.ellipse((x - r, y - r, x + r, y + r), outline=AC + (a,), width=2); d.ellipse((x - 2, y - 2, x + 2, y + 2), fill=AC + (a,))
@@ -92,7 +92,22 @@ def make(style, W, H, accent, base, labels=None, font=None):
             d.line([(cx, cy), (cx + sx * 90, cy)], fill=AC + (150,), width=3); d.line([(cx, cy), (cx, cy + sy * 90)], fill=AC + (150,), width=3)
         d.line([(0, 0), (W * 0.22, H * 0.4)], fill=AC + (40,), width=2); d.line([(W, H), (W * 0.78, H * 0.6)], fill=AC + (40,), width=2)
         d.ellipse((W * 0.9 - 80, H * 0.18 - 80, W * 0.9 + 80, H * 0.18 + 80), outline=AC + (60,), width=2)
-    if style not in ("aurora", "minimal"): L = _edge_mask(L, dd)
+    elif style == "terminal":
+        for y in range(0, H, 4): d.line([(0, y), (W, y)], fill=AC + (7,))
+        try: f = ImageFont.truetype(font, int(20 * S) or 20) if font else ImageFont.load_default()
+        except Exception: f = ImageFont.load_default()
+        chars = "01{}[]<>/=;$#"; cw, chh = int(15 * S) or 15, int(26 * S) or 26
+        for col in range(0, int(W / cw)):
+            x = col * cw
+            if min(x, W - x) > 230 * S: continue
+            n = rnd.randrange(8, 40); y0 = rnd.randrange(0, H)
+            for r_ in range(n):
+                y = (y0 + r_ * chh) % H; d.text((x, y), rnd.choice(chars), font=f, fill=AC + (int(62 * (1 - r_ / n)) + 6,))
+        m = 40
+        for cx, cy, sx, sy in ((m, m, 1, 1), (W - m, m, -1, 1), (m, H - m, 1, -1), (W - m, H - m, -1, -1)):
+            d.line([(cx, cy), (cx + sx * 70, cy)], fill=AC + (170,), width=3); d.line([(cx, cy), (cx, cy + sy * 70)], fill=AC + (170,), width=3)
+        d.text((m + 20, m + 14), "$ _", font=f, fill=AC + (160,))
+    if style not in ("aurora", "minimal", "terminal"): L = _edge_mask(L, dd)
     im = Image.alpha_composite(im, L)
     if labels:
         dl = ImageDraw.Draw(im); f = ImageFont.truetype(font, int(26 * S) if font else 26) if font else ImageFont.load_default()

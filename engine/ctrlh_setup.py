@@ -5,7 +5,8 @@ Non-interactive:  python3 engine/ctrlh_setup.py --channel "My Channel" --theme c
 import os, sys, json, argparse
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 import themes, bg_styles
-CARD_STYLES = ["classic", "proposed", "glass", "numbers", "outline", "solid", "neon", "paper", "soft", "terminal", "steps", "iconbox"]
+import card_names
+CARD_STYLES = card_names.ALL_NEW
 def ask(q, default=""):
     try: v = input("%s%s: " % (q, " [%s]" % default if default else "")).strip()
     except EOFError: v = ""
@@ -30,8 +31,8 @@ def main():
     if a.card_color: cfg["card_color"] = a.card_color
     if a.bg_color: cfg["bg_color"] = a.bg_color
     if inter: print("\nCard styles: " + ", ".join(CARD_STYLES) + "  (or: all)")
-    cs = g(a.card_styles, "Card style(s), comma separated", "classic").replace(" ", "").lower()
-    cfg["card_styles"] = "all" if cs == "all" else ",".join(x for x in cs.split(",") if x in CARD_STYLES) or "classic"
+    cs = g(a.card_styles, "Card style(s), comma separated", "plain_dark").replace(" ", "").lower()
+    cfg["card_styles"] = "all" if cs == "all" else ",".join(card_names.TO_NEW[c] for c in (card_names.canon(x) for x in cs.split(",")) if c) or "plain_dark"
     if inter: print("\nBackgrounds: " + ", ".join(bg_styles.STYLES))
     bs = g(a.bg_style, "Background style", "circuit").lower(); cfg["bg_style"] = bs if bs in bg_styles.STYLES else "circuit"
     cfg["signoff_1"] = g(a.signoff1, "End-card line 1", "Think Deeper."); cfg["signoff_2"] = g(a.signoff2, "End-card line 2", "Build Smarter.")

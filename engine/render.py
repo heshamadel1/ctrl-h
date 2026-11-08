@@ -4,6 +4,6 @@ import sys, os, importlib
 here = os.path.dirname(os.path.abspath(__file__)); sys.path[:0] = [os.getcwd(), here]
 import ctrlh_config
 from anim import Video, run
-N = importlib.import_module(sys.argv[1])
+import scenefile; N = scenefile.load(sys.argv[1])
 V = Video(N.SC, N.STAGES, N.DUR, N.T_END, N.TAG1, N.TAG2, N.TECH, getattr(N, "SUB_T", None), getattr(N, "FOL_T", None))
 run(V, [sys.argv[0]] + (sys.argv[2:] if sys.argv[2] == "frames" else ["video", sys.argv[2]]))

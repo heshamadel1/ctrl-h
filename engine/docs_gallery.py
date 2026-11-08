@@ -1,4 +1,5 @@
 """Render one reference picture per feature: python3 engine/docs_gallery.py [out_dir] [name ...]   (from the kit root)
+Note: the kit ships only contact sheets (docs/images/blocks-sheet-*.png, cards-*.png); this script makes single pictures for your own use.
 Uses examples/docs_gallery_features.py. A feature whose scene raises an error is reported and skipped."""
 import sys, os, importlib, traceback
 root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
