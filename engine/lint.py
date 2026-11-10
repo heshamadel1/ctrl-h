@@ -62,6 +62,12 @@ if T:
     if miss: issues.append("video_type '%s': features not used: %s (use them, or say why they do not fit the script)" % (vt, ", ".join(miss)))
     for grp in T.get("any_of", []):
         if not used & set(grp): issues.append("video_type '%s': no technical block used (one of %s)" % (vt, ", ".join(grp)))
+# ---- variety (owner, 2026-11-09): do not reuse the same cards/blocks in every video; try something new each time
+_k = lambda sc: sorted({k_ for k_ in kinds(sc["blocks"]) if k_ not in ("row", "tiles")})
+_distinct = {k_ for sc in SC for k_ in _k(sc)}; _need = min(8, max(3, len(SC) // 2))
+if len(SC) >= 6 and len(_distinct) < _need: issues.append("variety: only %d block kinds in %d scenes (aim for %d or more); try: %s" % (len(_distinct), len(SC), _need, ", ".join(sorted(set(_an.DRAW) - _distinct - {"row", "tiles"})[:8])))
+for _i in range(1, len(SC)):
+    if _k(SC[_i]) == _k(SC[_i - 1]) and len(SC) >= 6: issues.append("variety: scenes %d and %d use the same block kinds (%s); change one of them" % (_i - 1, _i, ", ".join(_k(SC[_i]))))
 dis = {x for x in os.environ.get("CTRLH_DISABLED_BLOCKS", "").split(",") if x}
 print("video_type: %s | scenes: %d | blocks used: %s%s" % (vt, len(SC), ", ".join(sorted(used)), " | disabled: " + ", ".join(sorted(dis)) if dis else ""))
 for m in issues: print("LINT:", m)

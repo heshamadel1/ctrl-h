@@ -29,6 +29,7 @@ _DEFAULT_STYLE = "classic"   # what someone who just installed the kit gets
 _cs = os.environ.get("CTRLH_CARD_STYLES", "").replace(" ", "").lower()   # e.g. glass | classic,numbers | all
 import card_names as _cn
 CARD_STYLES = _ALL_STYLES if _cs == "all" else ([c for c in (_cn.canon(x) for x in _cs.split(",")) if c in _ALL_STYLES] or [_DEFAULT_STYLE])
+PANEL = (255, 253, 249) if _T.get("light") else (18, 20, 25); CB = (14, 14, 12) if _T.get("light") else None   # code / terminal / chat panels: light card with ink text in the paper and soft themes
 GRAYC = (110, 106, 96) if _T.get("light") else (150, 156, 170); RED = (255, 92, 92); GRN = (80, 230, 140); AMB = (255, 196, 80); BLUE = (150, 200, 255); VIO = (176, 148, 255)
 # texts that are part of the brand / language; override with environment variables
 LBL_OK = os.environ.get("CTRLH_LABEL_OK", "صح"); LBL_BAD = os.environ.get("CTRLH_LABEL_WRONG", "غلط")
@@ -63,8 +64,14 @@ def A(c, a): return (int(c[0]), int(c[1]), int(c[2]), int(round(255 * cl(a))))
 def lerp(c0, c1, k): return tuple(c0[i] + (c1[i] - c0[i]) * k for i in range(3))
 
 
+SOFT = bool(_T.get("soft"))   # theme soft_cream: soft white cards, light shadow, thin border, soft buttons/end card
 def hard(d, box, fill, shadow, border=PAPER, a=1.0, r=22, off=9, bw=4, dy=0):
     x0, y0, x1, y1 = box; y0 += dy; y1 += dy
+    if SOFT:
+        for i in range(12, 0, -1):
+            d.rounded_rectangle((x0 - i + 2, y0 + i * 1.2 + 4, x1 + i - 2, y1 + i * 1.2 + 4), r + i, fill=(150, 110, 60, int(3.2 * a * (13 - i) / 2)))
+        d.rounded_rectangle((x0, y0, x1, y1), r, fill=A((255, 253, 249), a), outline=A(lerp((232, 224, 208), OR, 0.0 if border == PAPER else 0.55), a), width=2)
+        return
     d.rounded_rectangle((x0 + off, y0 + off, x1 + off, y1 + off), r, fill=A(shadow, a))
     d.rounded_rectangle((x0, y0, x1, y1), r, fill=A(fill, a), outline=A(border, a), width=bw)
 
@@ -101,6 +108,9 @@ def colorize(text):
             for k in range(m.start(), m.end()): cols[k] = c
     paint(r"\b\d+\b", GRN); paint(r"\b[A-Z]\w*", VIO); paint(r"\$\w+", PAPER); paint(r"\b(class|public|function|return|fn|use|true|false)\b", OR)
     paint(r"'[^']*'", AMB); paint(r"->\w+", BLUE); paint(r"::\w+", BLUE); paint(r"=>", OR)
+    if _T.get("light"):   # darker syntax colours that read on a light panel
+        m = {GRN: (20, 140, 85), VIO: (106, 62, 214), AMB: (176, 108, 0), BLUE: (24, 104, 196), OR: (214, 96, 0)}
+        cols = [m.get(c, c) for c in cols]
     return cols
 
 
@@ -448,7 +458,7 @@ def draw_code(d, box, b, t, k):
     if b.get("shake") is not None:
         q_ = t - b["shake"]
         if 0 < q_ < 0.5: x0 += math.sin(q_ * 70) * 12 * (1 - q_ / 0.5); x1 += math.sin(q_ * 70) * 12 * (1 - q_ / 0.5)
-    hard(d, (x0, y0, x1, y1), (18, 20, 25), GRAYC, border=GRAYC, a=al, r=26, off=8, bw=3, dy=dy)
+    hard(d, (x0, y0, x1, y1), PANEL, CB or GRAYC, border=CB or GRAYC, a=al, r=26, off=8, bw=3, dy=dy)
     fo = None
     for ft_, fl_ in b.get("focus", []):
         if t >= ft_: fo = fl_
@@ -526,7 +536,7 @@ def draw_zoom(d, box, b, t, k):
     al = E(t, b["t"])
     if al < 0.01: return
     x0, y0, x1, y1 = box; g = zoom_geom(b, x1 - x0); dy = (1 - al) * 28
-    hard(d, (x0, y0, x1, y0 + g["bh"]), (18, 20, 25), GRAYC, border=GRAYC, a=al, r=26, off=8, bw=3, dy=dy)
+    hard(d, (x0, y0, x1, y0 + g["bh"]), PANEL, CB or GRAYC, border=CB or GRAYC, a=al, r=26, off=8, bw=3, dy=dy)
     for j, c in enumerate([(255, 95, 86), (255, 189, 46), (39, 201, 63)]):
         d.ellipse((x0 + 26 + j * 26, y0 + 20 + dy, x0 + 42 + j * 26, y0 + 36 + dy), fill=A(c, al))
     d.text((x0 + 130, y0 + 28 + dy), b.get("file", "Console"), font=F(MONO, 22), fill=A(GRAYC, al), anchor="lm")
@@ -583,7 +593,7 @@ def draw_cta(d, box, b, t, k):
     if al < 0.01: return
     x0, y0, x1, y1 = box; cx = (x0 + x1) / 2; cy = (y0 + y1) / 2
     w = min(1000, x1 - x0); h = 190 if WIDE else 230
-    hard(d, (cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2), (18, 20, 25), GRAYC, border=GRAYC, a=al, r=34, off=10, bw=3, dy=(1 - al) * 28)
+    hard(d, (cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2), PANEL, CB or GRAYC, border=CB or GRAYC, a=al, r=34, off=10, bw=3, dy=(1 - al) * 28)
     txt(d, (cx + w / 2 - 70, cy + (1 - al) * 28), "اكتبلي إجابتك في الكومنتات", 52 if WIDE else 54, A(PT, al), anchor="rm")
     if int(t * 2) % 2 == 0: d.rectangle((cx - w / 2 + 60, cy - 44, cx - w / 2 + 66, cy + 44), fill=A(OR, al))
 
@@ -642,9 +652,10 @@ def draw_flow(d, box, b, t, k):
         for st in arr:
             q = prog(t, st[0] + 0.85, st[0] + 1.35)
             if 0 < q < 1: pulse = max(pulse, 1 - q)
-        col = lerp(PT, OR, min(1, pulse * 1.5))
+        PTc = PAPER if _T.get("light") else PT   # text/border on the CARDC nodes: ink on light themes
+        col = lerp(PTc, OR, min(1, pulse * 1.5))
         hard(d, (cx - nw / 2, cy - nh / 2, cx + nw / 2, cy + nh / 2), CARDC, OR if pulse > 0 else (40, 42, 48), border=col, a=al, r=24, off=7, bw=4, dy=dy)
-        txt(d, (cx, cy + dy), lab, 34 if WIDE else 32, A(PT, al))
+        txt(d, (cx, cy + dy), lab, 34 if WIDE else 32, A(PTc, al))
     for (te, i, j, lab) in b["steps"]:
         q = prog(t, te, te + 0.85)
         if q <= 0 or q >= 1: continue
@@ -653,7 +664,7 @@ def draw_flow(d, box, b, t, k):
         for tr in range(1, 5):
             e2 = ss(max(0, q - tr * 0.04)); x2 = xs[i] + (xs[j] - xs[i]) * e2
             d.ellipse((x2 - 9, ya - 9, x2 + 9, ya + 9), fill=A(OR, 0.18 * (5 - tr)))
-        d.ellipse((x - 13, ya - 13, x + 13, ya + 13), fill=A(OR, 1), outline=A(PT, 1), width=3)
+        d.ellipse((x - 13, ya - 13, x + 13, ya + 13), fill=A(OR, 1), outline=A(PAPER if _T.get("light") else PT, 1), width=3)
         txt(d, (x, ya - 64), lab, 28 if WIDE else 26, A(OR, 1))
 
 
@@ -778,7 +789,7 @@ def draw_ba(d, box, b, t, k):
     al = E(t, b["t"])
     if al < 0.01: return
     x0, y0, x1, y1 = box; dy = (1 - al) * 28
-    hard(d, (x0, y0, x1, y1), (18, 20, 25), GRAYC, border=GRAYC, a=al, r=26, off=8, bw=3, dy=dy)
+    hard(d, (x0, y0, x1, y1), PANEL, CB or GRAYC, border=CB or GRAYC, a=al, r=26, off=8, bw=3, dy=dy)
     pw, ph = int(x1 - x0), int(y1 - y0); s_ = 30 if WIDE else 34; f = F(MONO, s_)
     q = ss(prog(t, b["t_slide"], b["t_slide"] + 1.3)); xdiv = pw - 40 - q * (pw / 2 - 40)
     A1 = Image.new("RGBA", (pw, ph), (0, 0, 0, 0)); B1 = Image.new("RGBA", (pw, ph), (0, 0, 0, 0))
@@ -820,6 +831,22 @@ def abs_button(OV, b, t):
     sc *= 1 - 0.05 * press; w, h = w * sc, h * sc; cy += (1 - al) * 40 + 8 * press
     done = t >= t_press + 0.1; kind = b["kind"]
     label = ("SUBSCRIBED" if done else "SUBSCRIBE") if kind == "subscribe" else ("FOLLOWING" if done else "FOLLOW")
+    if SOFT:
+        INKS = (22, 20, 18)
+        sh = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ImageDraw.Draw(sh).rounded_rectangle((cx - w / 2, cy - h / 2 + 14, cx + w / 2, cy + h / 2 + 14), 44, fill=(120, 84, 40, int(90 * al)))
+        OV.alpha_composite(sh.filter(ImageFilter.GaussianBlur(14)))
+        fillc = (255, 138, 17) if kind == "subscribe" else (255, 253, 249)
+        d.rounded_rectangle((cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2), 44, fill=A(fillc, al), outline=A((255, 138, 17), al), width=5)
+        d.text((cx + 34, cy), label, font=F(MONO, int(48 * sc * (w / 560 if w < 560 else 1))), fill=A(INKS, al), anchor="mm")
+        ix = cx - w / 2 + 62
+        if done or kind == "follow":
+            d.ellipse((ix - 32, cy - 32, ix + 32, cy + 32), fill=A((255, 138, 17), al))
+            if done: d.line([(ix - 15, cy + 2), (ix - 3, cy + 14), (ix + 17, cy - 13)], fill=A(INKS, al), width=9)
+            else: d.line([(ix - 15, cy), (ix + 15, cy)], fill=A(INKS, al), width=8); d.line([(ix, cy - 15), (ix, cy + 15)], fill=A(INKS, al), width=8)
+        if kind == "subscribe":
+            swing = math.sin((t - t_press) * 18) * math.exp(-(t - t_press) * 2.5) if t > t_press else 0.0
+            _bell(d, cx + w / 2 - 16, cy - h / 2 + 6, al, swing)
+        return
     sh = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ImageDraw.Draw(sh).rounded_rectangle((cx - w / 2 + 6, cy - h / 2 + 22, cx + w / 2 + 6, cy + h / 2 + 22), 44, fill=(0, 0, 0, int(170 * al)))
     OV.alpha_composite(sh.filter(ImageFilter.GaussianBlur(12)))
     d.rounded_rectangle((cx - w / 2, cy - h / 2 + 12, cx + w / 2, cy + h / 2 + 12), 44, fill=A(ORD, al))
@@ -897,7 +924,7 @@ def draw_predict(d, box, b, t, k):
     al = E(t, b["t"])
     if al < 0.01: return
     x0, y0, x1, y1 = box; dy = (1 - al) * 28
-    hard(d, (x0, y0, x1, y1), (18, 20, 25), OR, border=OR, a=al, r=26, off=8, bw=4, dy=dy)
+    hard(d, (x0, y0, x1, y1), PANEL, OR, border=OR, a=al, r=26, off=8, bw=4, dy=dy)
     s_ = 30 if WIDE else 36; f = F(MONO, s_)
     for j, ln in enumerate(b["lines"]):
         xx = x0 + 34; yy = y0 + 50 + j * s_ * 1.55 + s_ * 0.8 + dy
@@ -965,8 +992,8 @@ def chapter_banner(OV, t, st_times, STAGES):
         if 0 <= q < 1.8:
             al = ss(prog(q, 0, 0.3)) * (1 - ss(prog(q, 1.4, 1.8))); d = ImageDraw.Draw(OV)
             text = "%s %d %s %d · %s" % (LBL_CHAPTER, i + 1, LBL_OF, len(STAGES), STAGES[i]); f = F(ARB, 34)
-            w = f.getlength(text, direction="rtl", language="ar") + 90; h = 62; y = (H - 150) if WIDE else 1690
-            x0 = (W - w) / 2 + (1 - ss(prog(q, 0, 0.3))) * -80
+            w = f.getlength(text, direction="rtl", language="ar") + 90; h = 62; y = (H - 210) if WIDE else 1690
+            x0 = (W - 20 - w) + (1 - ss(prog(q, 0, 0.3))) * (w + 40) if WIDE else (W - w) / 2 + (1 - ss(prog(q, 0, 0.3))) * -80
             d.rounded_rectangle((x0, y - h / 2, x0 + w, y + h / 2), 30, fill=A(OR, al)); txt(d, (x0 + w / 2, y), text, 34, A(INK, al))
             d.ellipse((x0 + 22, y - 8, x0 + 38, y + 8), fill=A(INK, al))
 
@@ -1087,7 +1114,11 @@ def corner_logo(im, t, T_END):
     x, y = 40, 32 + fy
     g2 = _GL.copy(); g2.putalpha(g2.getchannel("A").point(lambda v: int(v * ga * vis)))
     im.alpha_composite(g2, (int(x + _MONO.width / 2 - _GL.width / 2), int(y + _MONO.height / 2 - _GL.height / 2)))
-    m2 = _MONO.copy(); m2.putalpha(m2.getchannel("A").point(lambda v: int(v * vis)))
+    if SOFT or _T.get("light"):   # light themes: the white H becomes dark so it shows on cream
+        arr = np.asarray(_MONO.convert("RGBA")).copy(); m = arr[..., :3].astype(int); white = (m.max(axis=2) - m.min(axis=2) < 60) & (m.max(axis=2) > 150)
+        arr[white, :3] = (22, 20, 18); _SM = Image.fromarray(arr, "RGBA")
+    else: _SM = _MONO
+    m2 = _SM.copy(); m2.putalpha(m2.getchannel("A").point(lambda v: int(v * vis)))
     im.alpha_composite(m2, (int(x), int(y)))
 
 
@@ -1096,7 +1127,7 @@ def make_bg(tech_labels):
     custom = bool(os.environ.get("CTRLH_BG_STYLE")) or _T.get("light") or OR != (255, 138, 17) or BASEC != (13, 14, 16)
     if os.environ.get("CTRLH_BG_STYLE", "").lower() == "hud_live" and WIDE: return Image.new("RGBA", (W, H), (10, 10, 10, 255))   # drawn live by HudLive
     if os.environ.get("BGFILE") and WIDE: return Image.open(os.environ["BGFILE"]).convert("RGBA")
-    if custom: return bg_styles.make(os.environ.get("CTRLH_BG_STYLE", "paper" if _T.get("light") else "circuit").lower(), W, H, OR, BASEC, tech_labels, MONO)
+    if custom: return bg_styles.make(os.environ.get("CTRLH_BG_STYLE", _T.get("bg") or ("paper" if _T.get("light") else "circuit")).lower(), W, H, OR, BASEC, tech_labels, MONO)
     if WIDE: return Image.open(SD + "backgrounds/default.png").convert("RGBA")
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
     base = np.zeros((H, W, 3), np.float32) + np.array([13, 14, 16], np.float32)
@@ -1131,7 +1162,29 @@ _LOGO = _asset_img("logo_ch.png", "RGB", (760, 760)).resize((760, 760), Image.LA
 LA = np.asarray(_LOGO).astype(np.float32)
 
 
+def _soft_logo():
+    g = np.asarray(_LOGO.convert("RGB")).astype(np.float32); lum = g.max(axis=2); sat = g.max(axis=2) - g.min(axis=2)
+    col = g.copy(); col[sat < 60] = (22, 20, 18)
+    return Image.fromarray(np.dstack([col, np.clip(lum / 110, 0, 1) * 255]).astype(np.uint8), "RGBA")
+
+
 def end_frame(t, T_END, TAG1, TAG2):
+    if SOFT:
+        import bg_styles
+        a = ss(prog(t, T_END + 0.2, T_END + 0.9)); bump = math.sin(math.pi * prog(t, T_END + 1.5, T_END + 2.3)) ** 2
+        im = bg_styles._cream(W, H, (242, 237, 224), None, None).convert("RGBA"); d = ImageDraw.Draw(im)
+        sz = int(760 * (1 + 0.04 * bump)); lg = _soft_logo().resize((sz, sz), Image.LANCZOS)
+        al_ = lg.getchannel("A").point(lambda v: int(v * a)); lg.putalpha(al_)
+        im.alpha_composite(lg, (W // 2 - sz // 2, (160 if WIDE else 520) + (760 - sz) // 2))
+        ty = 950 if WIDE else 1360
+        d.text((W / 2, ty), SIGNOFF1, font=F(MONO, 50), fill=A((22, 20, 18), E(t, TAG1, 0.3)), anchor="mm")
+        d.text((W / 2, ty + 62), SIGNOFF2, font=F(MONO, 50), fill=A((236, 112, 0), E(t, TAG2, 0.3)), anchor="mm")
+        OVE = Image.new("RGBA", (W, H), (0, 0, 0, 0)); tb = TAG1 + 0.2
+        pos = ((W - 290, 880), (W - 290, 1000)) if WIDE else ((W / 2, 1590), (W / 2, 1720)); wh = (500, 104) if WIDE else (560, 116)
+        for kind, (px, py), dly in (("subscribe", pos[0], 0.0), ("follow", pos[1], 0.35)):
+            abs_button(OVE, {"kind": kind, "t0": tb + dly, "t1": 1e6, "cx": px, "cy": py, "w": wh[0], "h": wh[1], "static": True}, t)
+        im.alpha_composite(OVE)
+        return np.asarray(im.convert("RGB")).copy()
     a = ss(prog(t, T_END + 0.2, T_END + 0.9)); bump = math.sin(math.pi * prog(t, T_END + 1.5, T_END + 2.3)) ** 2
     bg = np.empty((H, W, 3), np.float32); bg[:] = (5, 6, 7)
     x0 = W // 2 - 380; y0 = (160 if WIDE else 520)
@@ -1727,7 +1780,7 @@ def draw_http(d, box, b, t, k):
     code = int(b.get("status", 200)); scol = GRN if code < 300 else (AMB if code in (400, 404, 409, 422, 429) else RED)
     mcol = {"GET": GRN, "POST": OR, "PUT": AMB, "PATCH": AMB, "DELETE": RED}.get(b.get("method", "GET"), OR)
     def panel(bx, head, hcol, lines, tq, a_):
-        hard(d, bx, (18, 20, 25), GRAYC, border=GRAYC, a=a_, r=_R, off=8, bw=3, dy=dy)
+        hard(d, bx, PANEL, CB or GRAYC, border=CB or GRAYC, a=a_, r=_R, off=8, bw=3, dy=dy)
         xa, ya, xb, yb = bx; ya += dy
         return xa, ya, xb, yb
     xa, ya, xb, yb = panel(rq, "", mcol, [], 0, al)
@@ -1743,7 +1796,7 @@ def draw_http(d, box, b, t, k):
     ra = E(t, b["t_resp"], 0.3)
     if ra > 0.01:
         dy2 = (1 - ra) * 28
-        hard(d, rs, (18, 20, 25), scol, border=scol, a=ra, r=_R, off=8, bw=4, dy=dy2)
+        hard(d, rs, PANEL, scol, border=scol, a=ra, r=_R, off=8, bw=4, dy=dy2)
         xa2, ya2, xb2, yb2 = rs; ya2 += dy2
         st = "%d %s" % (code, b.get("status_text", "")); d.rounded_rectangle((xa2 + 24, ya2 + 22, xa2 + 24 + 40 + F(MONO, 28).getlength(st), ya2 + 70), 24, fill=A(scol, ra))
         d.text((xa2 + 44, ya2 + 46), st, font=F(MONO, 28), fill=A(INK, ra), anchor="lm")
@@ -1767,7 +1820,7 @@ def draw_diff(d, box, b, t, k):
     al = E(t, b["t"], 0.3)
     if al < 0.01: return
     x0, y0, x1, y1 = box; dy = (1 - al) * 28; s = b.get("size", 28 if WIDE else 30); f = F(MONO, s); rh = s * 1.55
-    hard(d, (x0, y0, x1, y1), (18, 20, 25), GRAYC, border=GRAYC, a=al, r=_R, off=8, bw=3, dy=dy)
+    hard(d, (x0, y0, x1, y1), PANEL, CB or GRAYC, border=CB or GRAYC, a=al, r=_R, off=8, bw=3, dy=dy)
     for j, c in enumerate([(255, 95, 86), (255, 189, 46), (39, 201, 63)]): d.ellipse((x0 + 26 + j * 26, y0 + 20 + dy, x0 + 42 + j * 26, y0 + 36 + dy), fill=A(c, al))
     d.text((x0 + 130, y0 + 28 + dy), b.get("file", "diff"), font=F(MONO, 22), fill=A(GRAYC, al), anchor="lm")
     for j, ln in enumerate(b["lines"]):
@@ -1994,7 +2047,7 @@ class Video:
             a_ = 0.5 * ss(prog(t, td - 0.9, td - 0.35)) * (1 - ss(prog(t, td - 0.05, td + 0.25)))
             if a_ > 0.01: S.alpha_composite(Image.new("RGBA", (W, H), (0, 0, 0, int(255 * a_))))
         S.alpha_composite(HL)
-        if k < len(self.scenes) - 1 and s["t1"] - 1.8 < t < s["t1"]:   # preview of the next scene on the right edge
+        if False and k < len(self.scenes) - 1 and s["t1"] - 1.8 < t < s["t1"]:   # (removed: merged into the chapter banner)
             q_ = prog(t, s["t1"] - 1.8, s["t1"] - 1.4) * (1 - prog(t, s["t1"] - 0.3, s["t1"]))
             if q_ > 0.01:
                 P_ = ImageDraw.Draw(S); nt = self.scenes[k + 1]["head"]; f_ = F(ARB, 30); w_ = f_.getlength(nt, direction="rtl", language="ar") + 70

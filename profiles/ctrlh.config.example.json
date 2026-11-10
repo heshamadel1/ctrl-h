@@ -1,0 +1,19 @@
+{
+  "_doc": "Copy to ctrlh.config.json (kit root or your working folder) and edit. Keys starting with _ are ignored. Every key: docs/CONFIGURATION.md. An environment variable typed before a command wins over this file.",
+  "channel_name": "My Channel",
+  "theme": "paper_orange",
+  "_theme": "orange | paper_orange | soft_cream",
+  "accent": "#FF8A11",
+  "card_styles": "all",
+  "_card_styles": "all | one name | list, e.g. [\"plain_dark\", \"glass_blur\"]; use card_style (singular) to lock ONE look",
+  "bg_style": "paper",
+  "_bg_style": "hud_live circuit grid hex dots waves aurora blueprint terminal minimal paper cream tech:laravel (tech:nextjs react laravel wp docker node rest db redis git, 16:9 only)",
+  "formats": ["wide"],
+  "_formats": "wide = 16:9, reel = 9:16",
+  "signoff_1": "Think Deeper.",
+  "signoff_2": "Build Smarter.",
+  "subscribe_t": 45,
+  "follow_t": false,
+  "max_part_seconds": 180,
+  "assets": "assets"
+}

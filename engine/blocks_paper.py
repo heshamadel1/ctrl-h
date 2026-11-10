@@ -1,6 +1,6 @@
 # "Paper" blocks (loaded by anim.py after blocks_flow.py): cream cards, black borders, hard shadows, highlighter.
 #   quote, chatwin, minichart, skeleton, filegrid, bigcount     They draw the same in every theme; the accent colour (OR) is the highlighter.
-LIGHT = bool(_T.get("light")); _FG = (14, 14, 12) if LIGHT else (245, 242, 230); _FG2 = (112, 106, 94) if LIGHT else (150, 146, 134)
+SOFT = bool(_T.get("soft")); LIGHT = bool(_T.get("light")); _FG = (14, 14, 12) if LIGHT else (245, 242, 230); _FG2 = (112, 106, 94) if LIGHT else (150, 146, 134)
 _PCRM = (251, 248, 237); _PINK = (14, 14, 12); _PG1 = (112, 106, 94); _PG2 = (80, 76, 68)
 
 
@@ -23,6 +23,10 @@ def _wrap(s, size, maxw):
 def _hs(d, box, fill, al, r=14, off=9, bw=4):
     """cream box with black border and a hard black shadow"""
     x0, y0, x1, y1 = box
+    if SOFT:   # soft_cream: light shadow, thin border, rounder corners (same look as the soft cards)
+        r = max(r, 20)
+        for i in range(10, 0, -1): d.rounded_rectangle((x0 - i + 2, y0 + i * 1.1 + 3, x1 + i - 2, y1 + i * 1.1 + 3), r + i, fill=(150, 110, 60, int(3.0 * al * (11 - i) / 2)))
+        d.rounded_rectangle(box, r, fill=A((255, 253, 249) if tuple(fill) == _PCRM else fill, al), outline=A((232, 224, 208) if tuple(fill) == _PCRM else lerp((232, 224, 208), OR, .55), al), width=2); return
     d.rounded_rectangle((x0 + off, y0 + off, x1 + off, y1 + off), r, fill=A(_PINK, al)); d.rounded_rectangle(box, r, fill=A(fill, al), outline=A(_PINK, al), width=bw)
 
 
@@ -64,9 +68,11 @@ def draw_chatwin(d, box, b, t, k):
     al = E(t, b["t"], .3)
     if al < .01: return
     x0, y0, x1, y1 = box; ww = min(x1 - x0 - 40, 1000 if WIDE else 980); wx0 = (x0 + x1) / 2 - ww / 2; wh = min(y1 - y0 - 20, 640 if WIDE else 820); dy = (1 - al) * 26; wy0 = y0 + dy
-    _hs(d, (wx0, wy0, wx0 + ww, wy0 + wh), _PCRM, al, 4, 12, 4); d.rectangle((wx0, wy0, wx0 + ww, wy0 + 76), fill=A(_PINK, al))
+    _hs(d, (wx0, wy0, wx0 + ww, wy0 + wh), _PCRM, al, 4, 12, 4)
+    if SOFT: d.rounded_rectangle((wx0 + 2, wy0 + 2, wx0 + ww - 2, wy0 + 76), 18, fill=A((247, 240, 228), al)); d.rectangle((wx0 + 2, wy0 + 50, wx0 + ww - 2, wy0 + 76), fill=A((247, 240, 228), al)); d.line([(wx0 + 2, wy0 + 76), (wx0 + ww - 2, wy0 + 76)], fill=A((232, 224, 208), al), width=2)
+    else: d.rectangle((wx0, wy0, wx0 + ww, wy0 + 76), fill=A(_PINK, al))
     for j, c in enumerate([(235, 70, 55), (245, 200, 40), (110, 210, 100)]): d.ellipse((wx0 + 26 + j * 36, wy0 + 26, wx0 + 52 + j * 36, wy0 + 52), fill=A(c, al))
-    _bt(d, (wx0 + 150, wy0 + 40), b.get("title", ""), 34, A(_PCRM, al), "lm")
+    _bt(d, (wx0 + 150, wy0 + 40), b.get("title", ""), 34, A((60, 54, 44) if SOFT else _PCRM, al), "lm")
     qa = E(t, b.get("ask_t", b["t"] + .3), .3)
     if qa > .01:
         aw = min(ww - 60, _bw(b["ask"], 48) + 70); ax1 = wx0 + ww - 28

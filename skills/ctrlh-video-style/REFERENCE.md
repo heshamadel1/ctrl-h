@@ -72,7 +72,7 @@ Fixed Subscribe / Follow buttons (times via `SUB_T`, `FOL_T`), chapter banner "Ø
 
 ## 9. Themes, backgrounds, formats
 
-Themes: orange (main dark) and paper_orange (light paper, orange highlighter); other colours via `accent`/`card_color`/`bg_color`. Backgrounds: circuit, grid, hex, dots, waves, aurora, blueprint, minimal, or own PNG. Formats: `FMT=wide` 1920x1080, `FMT=reel` 1080x1920, `OUT_W` rescales.
+Themes: orange (main dark), paper_orange (light paper, orange highlighter), soft_cream (soft cream, white rounded cards); other colours via `accent`/`card_color`/`bg_color`. Backgrounds: circuit, grid, hex, dots, waves, aurora, blueprint, minimal, or own PNG. Formats: `FMT=wide` 1920x1080, `FMT=reel` 1080x1920, `OUT_W` rescales.
 
 ## 10. Demo scene files (copy from them)
 

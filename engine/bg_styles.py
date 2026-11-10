@@ -1,6 +1,6 @@
 """Background styles for any accent / base colour, 16:9 and 9:16.
 make(style, W, H, accent, base, labels=None) -> RGBA PIL image.   styles: circuit grid hex dots waves aurora blueprint terminal minimal"""
-import math, random, numpy as np
+import os, math, random, numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 STYLES = {"circuit": "grid + circuit traces and nodes along the edges", "grid": "bold technical grid with corner glow",
           "hex": "hexagon lattice fading toward the centre", "dots": "dot matrix, brighter near the edges",
@@ -37,7 +37,34 @@ def _paper(W, H, base, labels, font):
     return im
 
 
+def _cream(W, H, base, labels, font):
+    from PIL import Image, ImageDraw, ImageFilter
+    im = Image.new("RGB", (W, H), (253, 247, 237)); d = ImageDraw.Draw(im)
+    for x in range(0, W, 54):
+        d.line([(x, 0), (x, H)], fill=(246, 238, 224), width=1)
+    for y in range(0, H, 54):
+        d.line([(0, y), (W, y)], fill=(246, 238, 224), width=1)
+    g = Image.new("RGB", (W, H), (0, 0, 0)); gd = ImageDraw.Draw(g)
+    gd.ellipse((W * 0.15, H * 0.86, W * 0.85, H * 1.35), fill=(255, 166, 70))
+    g = g.filter(ImageFilter.GaussianBlur(90))
+    from PIL import ImageChops
+    im = ImageChops.add(im, Image.eval(g, lambda v: int(v * 0.45)))
+    return im.convert('RGBA')
+TECHS = ["nextjs", "react", "laravel", "wp", "docker", "node", "rest", "db", "redis", "git"]   # bg_style "tech:<name>" (16:9 only; 9:16 falls back to circuit)
+def _tech(tech, W, H, accent):
+    """per-technology background (motifs of the technology at the edges) made by ctrlh_bg.py, cached in the temp folder"""
+    import subprocess, tempfile, sys
+    here = os.path.dirname(os.path.abspath(__file__)); out = os.path.join(tempfile.gettempdir(), "ctrlh_bg_%s_%02x%02x%02x.png" % ((tech,) + tuple(accent)))
+    if not os.path.isfile(out):
+        env = dict(os.environ, CTRLH_ACCENT="#%02X%02X%02X" % tuple(accent))
+        subprocess.check_call([sys.executable, os.path.join(here, "ctrlh_bg.py"), tech, out, os.path.join(here, "..", "assets", "fonts", "FiraCode-SemiBold.ttf")], env=env)
+    return Image.open(out).convert("RGBA")
 def make(style, W, H, accent, base, labels=None, font=None):
+    if style.startswith("tech:"):
+        t = style[5:]
+        if t in TECHS and W > H: return _tech(t, W, H, accent)
+        style = "circuit"
+    if style == "cream": return _cream(W, H, base, labels, font)
     if style == "paper": return _paper(W, H, base, labels, font)
     style = style if style in STYLES else "circuit"; rnd = random.Random(7)
     im, dd = _base(W, H, accent, base, glows=(style not in ("minimal", "terminal"))); AC = tuple(accent)

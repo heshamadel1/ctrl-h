@@ -5,7 +5,14 @@ description: "Use when delivering any Ctrl + H video or series playlist: make it
 
 > the brush stroke, glow, underline, keyword and tagline use the ACCENT colour of the channel profile (`ctrlh.config.json` -> `accent`, or the colour of its `theme`); the owner's default is orange #FF8A11. Read the config first, never hard-code orange for another theme. For another channel also use your own logo / reference plate. Project: https://github.com/heshamadel1/ctrl-h
 
+> v2.1.0: the thumbnail is OPTIONAL per video; the video skill asks before every video, make it only on a yes (a playlist cover only when asked).
+
 # Ctrl + H thumbnail (deliver with EVERY video)
+
+## FIXED DESIGN since 2026-11-09 (owner approved, do not redesign): `thumb_paper.py`
+Run: `python3 skills/ctrlh-thumbnail-style/thumb_paper.py out.png --kw "Price Snapshot" --l1 "العميل شاف 100" --l2 "ودفع 120؟!" [--left "label|value|unit"] [--right "label|value|unit"] [--no-cards]` -> 1280x720.
+Layout (never move): logo top-left with its white parts turned black (`assets/logo_ch_dark.png`, soft shadow, NO black box) / orange brush headline, ink text (line 1) / big ink line 2 on a yellow highlighter / two cards before -> after (left white with a red strike on the value, right orange) or `--no-cards` / keyword pill (ink pill, orange Fira Code text) / tagline THINK DEEPER. BUILD SMARTER. / icon row FRONTEND-BACKEND-DATABASES-DEVOPS-GIT (`assets/thumb_icons_row.png`) / orange corner stripes top-right and bottom-left / orange top bar. Colours = paper_orange (cream dotted paper, ink, #FF8A11). For a video in another theme only the colours change, never the layout. The older dark-desk-photo design below is legacy: use it only if he asks. The thumbnail is OPTIONAL per video (asked before each video); do not recolour the dark photo plate (he rejected that on 2026-11-09).
+
 
 File name: `<topic>_thumb.png`; playlist cover: `playlist_<series>_thumb.png`.
 

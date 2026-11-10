@@ -1,6 +1,6 @@
 """First-run setup: writes ctrlh.config.json (your identity + look).
 Interactive:      python3 engine/ctrlh_setup.py
-Non-interactive:  python3 engine/ctrlh_setup.py --channel "My Channel" --theme cyan --card-styles glass,neon --bg-style hex --yes
+Non-interactive:  python3 engine/ctrlh_setup.py --channel "My Channel" --theme soft_cream --card-styles glass,neon --bg-style hex --yes
 (Claude asks the same questions in chat and calls this script with the answers.)"""
 import os, sys, json, argparse
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
@@ -33,8 +33,10 @@ def main():
     if inter: print("\nCard styles: " + ", ".join(CARD_STYLES) + "  (or: all)")
     cs = g(a.card_styles, "Card style(s), comma separated", "plain_dark").replace(" ", "").lower()
     cfg["card_styles"] = "all" if cs == "all" else ",".join(card_names.TO_NEW[c] for c in (card_names.canon(x) for x in cs.split(",")) if c) or "plain_dark"
-    if inter: print("\nBackgrounds: " + ", ".join(bg_styles.STYLES))
-    bs = g(a.bg_style, "Background style", "circuit").lower(); cfg["bg_style"] = bs if bs in bg_styles.STYLES else "circuit"
+    BGS = ["hud_live"] + list(bg_styles.STYLES) + ["paper", "cream"] + ["tech:" + x for x in bg_styles.TECHS]
+    if inter: print("\nBackgrounds: " + ", ".join(BGS) + "  (empty = the theme default)")
+    bs = g(a.bg_style, "Background style", themes.THEMES[cfg["theme"]].get("bg") or "circuit").lower(); cfg["bg_style"] = bs if bs in BGS else (themes.THEMES[cfg["theme"]].get("bg") or "circuit")
+    if bs in BGS and bs != (themes.THEMES[cfg["theme"]].get("bg") or "circuit") and cfg["theme"] != "orange": cfg["bg_style_locked"] = True
     cfg["signoff_1"] = g(a.signoff1, "End-card line 1", "Think Deeper."); cfg["signoff_2"] = g(a.signoff2, "End-card line 2", "Build Smarter.")
     out = os.path.abspath(a.out); json.dump(cfg, open(out, "w", encoding="utf-8"), indent=2, ensure_ascii=False); print("\nsaved", out)
     assets = os.path.join(HERE, "..", "assets"); miss = [n for n in ("logo_ch.png", "mono.png") if not os.path.isfile(os.path.join(assets, n))]

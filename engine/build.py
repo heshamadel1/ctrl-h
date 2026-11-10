@@ -1,6 +1,6 @@
 """One command from scene file + voiceover to finished videos.
 usage (run from the scene file's folder):
-  python3 build.py <scenes_module> --vo voice.wav [--out DIR] [--formats wide,reel] [--max-part 180] [--strict] [--plan-only]
+  python3 build.py <scenes_module> --vo voice.wav [--out DIR] [--formats wide,reel] [--max-part 180] [--strict] [--plan-only] [--check-voice]
 Steps: lint (--strict stops on any LINT line) -> contact sheet -> split plan -> per part and format: render (scene cache) -> SFX -> voice cut -> mux -> meta.md.
 Formats default to config `formats` (["wide"]); 9:16 only when you list "reel". Long videos are split at the scene boundary nearest to equal parts
 (config `max_part_seconds`, default 180). Frame times stay global, so one scene file serves every part."""
@@ -28,8 +28,13 @@ cuts.append(DUR); parts = list(zip(cuts, cuts[1:]))
 print("PLAN: %d part(s): %s | formats: %s" % (len(parts), ", ".join("%.1f-%.1f" % p for p in parts), ",".join(formats)))
 if "--plan-only" in sys.argv: sys.exit(0)
 vo = opt("--vo"); assert vo and os.path.isfile(vo), "--vo voice.wav is required"
+if "--check-voice" in sys.argv or os.environ.get("CTRLH_CHECK_VOICE", "1") != "0":   # compare the WAV with the scene file BEFORE rendering
+    import check_voice
+    bad = check_voice.check(vo, N, strict="--check-voice" in sys.argv)
+    if bad and "--check-voice" in sys.argv: sys.exit("build stopped: fix DUR / T_END / TAG times (see CHECK lines above), or drop --check-voice")
+if "--check-voice-only" in sys.argv: sys.exit(0)
 scene_file = os.path.abspath(N.__file__); sfx = os.path.join(out, base + "_sfx.wav")
-sh([py, os.path.join(here, "make_audio.py"), scene_file, sfx])
+sh([py, os.path.join(here, "make_audio.py" if os.environ.get("CTRLH_SFX", "lib").lower() == "synth" else "make_audio_lib.py"), scene_file, sfx])
 mix = open(os.path.join(here, "mix2.txt")).read(); mixf = os.path.join(out, ".mix.txt"); open(mixf, "w").write(mix)
 for fmt in formats:
     for pi, (a, b) in enumerate(parts, 1):
