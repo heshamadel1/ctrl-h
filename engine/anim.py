@@ -6,6 +6,11 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ctrlh_config   # loads ctrlh.config.json (if any) into the CTRLH_* variables below
 import themes
+import fontres   # check / cross font resolution (no hard-coded system path)
+import motion
+from motion import cl, ss, prog, E, bob   # shared motion helpers (engine/motion.py); formulas unchanged
+lerp = motion.lerp_color
+import typo; typo.install()   # mixed Arabic/Latin layout shared by every drawing path (see typo.py)
 _T = themes.THEMES.get(os.environ.get("CTRLH_THEME", "").lower(), themes.THEMES[themes.DEFAULT])
 SD = os.environ.get("CTRLH_ASSETS", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")) + "/"
 FMT = os.environ.get("FMT", "wide")
@@ -52,16 +57,13 @@ _FC = {}
 def F(path, size):
     k = (path, int(size))
     if k not in _FC:
-        _FC[k] = ImageFont.truetype(path, int(size), layout_engine=ImageFont.Layout.RAQM)
+        try: _FC[k] = ImageFont.truetype(path, int(size), layout_engine=ImageFont.Layout.RAQM)
+        except OSError as e:   # Pillow only says "cannot open resource": say which font and how to fix it
+            raise SystemExit("FONT: cannot open %r (%s). The kit's fonts live in assets/fonts/; for your own font set CTRLH_FONT_AR (Arabic) / CTRLH_FONT_LATIN (English and code) to a .ttf/.otf file that exists." % (path, e))
     return _FC[k]
 
 
-def cl(x): return max(0.0, min(1.0, x))
-def ss(x): x = cl(x); return x * x * (3 - 2 * x)
-def prog(t, a, b): return cl((t - a) / (b - a))
-def E(t, te, d=0.4): return ss(prog(t, te - 0.12, te - 0.12 + min(d, 0.3)))
 def A(c, a): return (int(c[0]), int(c[1]), int(c[2]), int(round(255 * cl(a))))
-def lerp(c0, c1, k): return tuple(c0[i] + (c1[i] - c0[i]) * k for i in range(3))
 
 
 SOFT = bool(_T.get("soft"))   # theme soft_cream: soft white cards, light shadow, thin border, soft buttons/end card
@@ -98,7 +100,7 @@ def wrap(text, font, maxw, rtl=True):
 def badge(d, cx, cy, ok, a, r=28):
     col = GRN if ok else RED
     d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=A(col, a))
-    d.text((cx, cy - 1), "✓" if ok else "✕", font=F("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", int(r * 1.1)), fill=A(INK, a), anchor="mm")
+    fontres.symbol(d, (cx, cy - 1), "✓" if ok else "✕", int(r * 1.1), A(INK, a), F)
 
 
 def colorize(text):
@@ -291,7 +293,6 @@ def layout(blocks, reserve=0, top=True, cw=None, square=False):
 
 
 # ------------------------------------------------------------------ block drawers
-def bob(t, k): return 2.0 * math.sin(2 * math.pi * t / 3.6 + k)
 
 
 def toks_draw(d, cx, cy, text, size, key, al=1.0, wlist=None, t=0.0, base=None, hitc=None, flashbg=None):
@@ -502,7 +503,7 @@ def draw_timeline(d, box, b, t, k):
         if hl > 0.01: d.ellipse((cx - r - 12 - 8 * pulse, cy + dy - r - 12 - 8 * pulse, cx + r + 12 + 8 * pulse, cy + dy + r + 12 + 8 * pulse), outline=A(col, 0.55 * al * hl), width=3)
         d.ellipse((cx - r, cy + dy - r, cx + r, cy + dy + r), fill=A(CARDC, al), outline=A(col, al), width=5)
         sym = {"ok": "✓", "bad": "✕"}.get(st, str(j + 1))
-        d.text((cx, cy + dy), sym, font=F("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", int(r * 0.95)), fill=A(col, al), anchor="mm")
+        fontres.symbol(d, (cx, cy + dy), sym, int(r * 0.95), A(col, al), F)
         ls = 40 if WIDE else 46
         txt(d, (cx - r - 28, cy + dy - (16 if sub else 0)), label, ls, A(PAPER, al), anchor="rm")
         if sub: txt(d, (cx - r - 28, cy + dy + 24), sub, int(ls * 0.66), A(GRAYC, al), anchor="rm")
@@ -884,7 +885,7 @@ def abs_promise(OV, b, t):
     pk = prog(t, tu, tu + 0.5); glow = math.sin(math.pi * pk) if 0 < pk < 1 else 0
     fill = OR if op else (20, 22, 27)
     d.rounded_rectangle((x0 - glow * 8, y0 - glow * 8, x1 + glow * 8, y0 + h + glow * 8), 36, fill=A(fill, al), outline=A(OR if not op else INK, al), width=4)
-    d.text((x1 - 28 - (w - 130), y0 + h / 2 + 1), text, font=f, fill=A(PAPER if not op else INK, al), anchor="lm" if False else "rm", direction="rtl", language="ar") if False else txt(d, (x0 + 100 + (w - 130) / 2, y0 + h / 2), text, 30, A(PAPER if not op else INK, al))
+    txt(d, (x0 + 100 + (w - 130) / 2, y0 + h / 2), text, 30, A(PAPER if not op else INK, al))
     ix, iy = x0 + 48, y0 + h / 2
     if not op:
         d.rounded_rectangle((ix - 14, iy - 2, ix + 14, iy + 20), 5, fill=A(OR, al)); d.arc((ix - 10, iy - 22, ix + 10, iy + 6), 180, 360, fill=A(OR, al), width=5)
@@ -913,7 +914,7 @@ def draw_poll(d, box, b, t, k):
         if b.get("nopct"):
             pl = 0.5 + 0.5 * math.sin(t * 4 + i * 3.14)
             d.rounded_rectangle((bx0, by0, bx1, by0 + bh), 16, outline=A(OR, al * (0.5 + 0.5 * pl)), width=4)
-            d.text((bx0 + 20, by0 + bh / 2), lab, font=F(ARB, 32 if WIDE else 36) if not lab.isascii() else F(MONO, 30 if WIDE else 34), fill=A(PT, al), anchor="lm", direction="rtl" if not lab.isascii() else None, language="ar" if not lab.isascii() else None) if False else txt(d, ((bx0 + bx1) / 2, by0 + bh / 2), lab, 32 if WIDE else 36, A(PT, al))
+            txt(d, ((bx0 + bx1) / 2, by0 + bh / 2), lab, 32 if WIDE else 36, A(PT, al))
             continue
         if wv > 4: d.rounded_rectangle((bx0, by0, bx0 + wv, by0 + bh), 16, fill=A(OR if i == b.get("win", 0) else GRAYC, al))
         d.text((bx0 + 20, by0 + bh / 2), lab, font=F(MONO, 28 if WIDE else 34), fill=A(INK if wv > 200 else PT, al), anchor="lm")
@@ -1078,25 +1079,9 @@ def tabs_layer(t, STAGES, ST_TIMES, T_END, marks=()):
 
 
 # ------------------------------------------------------------------ layer transforms
-def shift_x(arr, off):
-    out = np.zeros_like(arr)
-    if off == 0: return arr
-    if off > 0: out[:, off:] = arr[:, :W - off]
-    else: out[:, :W + off] = arr[:, -off:]
-    return out
-
-
-def mblur(layer, length, shift, alpha):
-    a = np.asarray(layer).astype(np.float32)
-    pm = a.copy(); pm[..., :3] *= a[..., 3:4] / 255.0
-    n = max(2, int(length / 14) + 2); acc = np.zeros_like(pm)
-    for k in range(n):
-        acc += shift_x(pm, int(shift + length * (k / (n - 1) - 0.5)))
-    acc /= n
-    al = acc[..., 3:4]
-    rgb = acc[..., :3] / np.maximum(al / 255.0, 1e-3)
-    out = np.concatenate([np.clip(rgb, 0, 255), np.clip(al * alpha, 0, 255)], axis=2).astype(np.uint8)
-    return Image.fromarray(out, "RGBA")
+import transitions as _tr
+import transform as _xf, entities as _en
+from transitions import shift_x, mblur   # moved to engine/transitions.py unchanged
 
 
 # ------------------------------------------------------------------ monogram + background + end card
@@ -1891,10 +1876,29 @@ EXTRA_H.update({
 
 
 
-for _bf in ('blocks_flow.py', 'blocks_paper.py', 'blocks_hud.py'): exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), _bf), encoding='utf-8').read(), _bf, 'exec'))   # flow / system blocks (titlevs, split, chain, hub, pipeline, deviceflow, codeann, flowmini)
+# Block files, loaded in this order into this namespace (each registers its kinds in DRAW / ABS / EXTRA_H). BLOCK_SOURCE maps every kind to the file that registered it
+# (used by engine/blocks_info.py). blocks_paper.py used to be executed a second time right after this loop; it is pure definitions and no other file redefines its names or kinds,
+# so the second run changed nothing (checked 2026-11, docs/BLOCKS_REGISTRY.md) and was removed.
+BLOCK_FILES = ('blocks_flow.py', 'blocks_paper.py', 'blocks_hud.py', 'blocks_sysdiagram.py', 'blocks_path.py', 'blocks_timeline.py')
+BLOCK_SOURCE = {_k: 'anim.py' for _k in DRAW}; BLOCK_SOURCE.update({'abs:' + _k: 'anim.py' for _k in ABS})
+for _blk_file in BLOCK_FILES:   # (not named _bf: blocks_paper.py defines a function _bf)
+    _before = (set(DRAW), set(ABS))
+    exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), _blk_file), encoding='utf-8').read(), _blk_file, 'exec'))
+    for _k in set(DRAW) - _before[0]: BLOCK_SOURCE[_k] = _blk_file
+    for _k in set(ABS) - _before[1]: BLOCK_SOURCE["abs:" + _k] = _blk_file
 
 
-exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'blocks_paper.py'), encoding='utf-8').read(), 'blocks_paper.py', 'exec'))   # paper blocks (quote, chatwin, minichart, skeleton, filegrid, bigcount)
+def zoom_affine(S, z, ya):
+    """Same pixels as S.transform((W, H), AFFINE, (1/z, 0, W/2 - W/(2z), 0, 1/z, ya - ya/z), BICUBIC) but the part of the output that cannot receive content
+    (right of / below the content box) is not computed. The output origin and coefficients are NOT changed: Pillow accumulates the sample position pixel by pixel, so moving
+    the origin changes rounding in rare pixels (a first attempt that also cropped left/top differed by 1 level in 4 pixels of 1 frame in 14). docs/PERFORMANCE.md has the numbers."""
+    bb = S.getbbox(alpha_only=False)
+    if bb is None: return S
+    c_ = W / 2 - W / (2 * z); f_ = ya - ya / z
+    ox1 = min(W, int(math.ceil((bb[2] + 4 - c_) * z)) + 2); oy1 = min(H, int(math.ceil((bb[3] + 4 - f_) * z)) + 2)
+    if ox1 >= W and oy1 >= H: return S.transform((W, H), Image.AFFINE, (1 / z, 0, c_, 0, 1 / z, f_), Image.BICUBIC)
+    part = S.transform((ox1, oy1), Image.AFFINE, (1 / z, 0, c_, 0, 1 / z, f_), Image.BICUBIC)
+    out = Image.new("RGBA", (W, H), (0, 0, 0, 0)); out.paste(part, (0, 0)); return out
 
 
 class Video:
@@ -1902,6 +1906,11 @@ class Video:
         self.scenes, self.stages, self.dur, self.t_end, self.tag1, self.tag2 = scenes, stages, dur, t_end, tag1, tag2
         # clip window (auto-split parts / short tests): CTRLH_T0..CTRLH_T1 seconds of the full timeline; frame times stay GLOBAL so nothing else changes
         self.t_off = float(os.environ.get("CTRLH_T0") or 0); self.t_stop = min(float(os.environ.get("CTRLH_T1") or dur), dur)
+        self.tr_default = _tr.global_default()   # CTRLH_TRANSITION / CTRLH_TRANSITION_DUR; a bad name stops here with the list of valid ones
+        for _i, _s in enumerate(scenes): _tr.resolve(_s, True); _tr.resolve(_s, False)
+        for _s in scenes:
+            if _s.get("camera"): _xf.validate_camera(_s["camera"])   # validate per-scene transition keys before rendering
+        self.entities = _en.validate([(_i, _e) for _i, _s in enumerate(scenes) for _e in _s.get("entities", [])])   # persistent entities (entities.py): defined once, run on global time
         self.N = int(round(FPS * (self.t_stop - self.t_off))); self.bg = make_bg(tech)
         self.hud = HudLive() if (os.environ.get('CTRLH_BG_STYLE', '').lower() == 'hud_live' and WIDE) else None
         self.chips = [auto_chips(s_, tech) for s_ in self.scenes] if self.hud else []
@@ -2042,25 +2051,15 @@ class Video:
             if 0 <= t - bt < 0.5: z += 0.014 * math.exp(-(t - bt) / 0.12)
         if z > 1.002:
             ya = RY0 - 10   # sub-pixel affine zoom (no integer crop snapping => no jitter), anchored under the headline
-            S = S.transform((W, H), Image.AFFINE, (1 / z, 0, W / 2 - W / (2 * z), 0, 1 / z, ya - ya / z), Image.BICUBIC)
+            S = zoom_affine(S, z, ya)
+        if s.get("camera"): S = _xf.apply_camera(S, _xf.camera_at(t, s["camera"]))   # optional scene camera: pan / zoom / tilt / focus keyframes in global time (transform.py)
         for td in (s.get("dims", []) if os.environ.get("CTRLH_DIMS") == "1" else []):   # OFF by default: the dark flash looked like the screen turning off
             a_ = 0.5 * ss(prog(t, td - 0.9, td - 0.35)) * (1 - ss(prog(t, td - 0.05, td + 0.25)))
             if a_ > 0.01: S.alpha_composite(Image.new("RGBA", (W, H), (0, 0, 0, int(255 * a_))))
         S.alpha_composite(HL)
-        if False and k < len(self.scenes) - 1 and s["t1"] - 1.8 < t < s["t1"]:   # (removed: merged into the chapter banner)
-            q_ = prog(t, s["t1"] - 1.8, s["t1"] - 1.4) * (1 - prog(t, s["t1"] - 0.3, s["t1"]))
-            if q_ > 0.01:
-                P_ = ImageDraw.Draw(S); nt = self.scenes[k + 1]["head"]; f_ = F(ARB, 30); w_ = f_.getlength(nt, direction="rtl", language="ar") + 70
-                xr = W - 20 + (1 - ss(q_)) * (w_ + 30); yr = (H - 210) if WIDE else 1630
-                P_.rounded_rectangle((xr - w_, yr - 30, xr + 40, yr + 30), 30, fill=(30, 32, 38, int(235 * q_)), outline=A(OR, q_), width=3)
-                P_.text((xr - w_ / 2 + 20, yr), nt, font=f_, fill=A(PAPER, q_), anchor="mm", direction="rtl", language="ar")
-        # transitions: in (scene start), out (scene end)
-        pin = 1 - ss(prog(t, s["t0"], s["t0"] + 0.34)) if k > 0 else 0.0
-        pout = ss(prog(t, s["t1"] - 0.28, s["t1"])) if k < len(self.scenes) - 1 else 0.0
-        ent = ("right", "up", "left")[k % 3]
-        if pin > 0.003 and ent == "up": S = S.transform((W, H), Image.AFFINE, (1, 0, 0, 0, 1, -int(H * 0.12 * pin)), Image.BILINEAR); S.putalpha(S.getchannel("A").point(lambda v, p=pin: int(v * (1 - 0.8 * p))))
-        elif pin > 0.003: S = mblur(S, 150 * pin, int(W * 0.18 * pin * (1 if ent == "right" else -1)), 1 - 0.8 * pin)
-        elif pout > 0.003: S = mblur(S, 220 * pout, int(-W * 0.22 * pout), 1 - pout)
+        # (a 'next scene' preview pill used to be drawn here; it was disabled long ago because the chapter banner (chapter_banner) replaced it, and the dead code was removed in Phase 9)
+        # transitions: in (scene start), out (scene end); kinds, directions, durations and easing come from transitions.py (default "classic" = the original look)
+        S = _tr.apply_scene(S, t, self.scenes, k, self.tr_default)
         if self.hud is not None:
             ca_ = 1.0
             if k > 0 and self.chips[k] != self.chips[k - 1]: ca_ = min(ca_, ss(prog(t, s["t0"] + 0.1, s["t0"] + 0.45)))
@@ -2077,6 +2076,8 @@ class Video:
         self.link_ghost(OV, t, k)
         if pa_ < 0.5: chapter_banner(OV, t, self.st_times, self.stages)
         im.alpha_composite(S)
+        if self.entities:   # persistent entities sit above the scene (and its transition) so a scene change never drags or cuts them
+            im.alpha_composite(_en.draw_all(Image.new("RGBA", (W, H), (0, 0, 0, 0)), t, self.entities, self.t_end, "wide" if WIDE else "reel", _ENT_CTX))
         im.alpha_composite(OV)
         corner_logo(im, t, self.t_end)
         return np.asarray(im.convert("RGB")).copy()
@@ -2095,6 +2096,28 @@ def _chunks(V):
     return list(zip(cuts, cuts[1:]))
 
 
+_ENT_CTX = {"accent": tuple(OR), "card": tuple(CARDC), "fg": (14, 14, 12) if LIGHT else (245, 245, 245), "text": lambda d, xy, s, size, fill: _bt(d, xy, s, size, fill), "key": (tuple(OR), tuple(CARDC), FMT, bool(LIGHT))}
+
+
+_KIT_SIG = None
+def _kit_sig():
+    """fingerprint of what the kit ships and frames depend on besides code: fonts / backgrounds / images in assets/ (name, size, mtime; sound files excluded) and the content of profiles/*.json (themes, video types).
+    Before this, editing a theme file or replacing a background kept serving stale cached segments."""
+    global _KIT_SIG
+    if _KIT_SIG is None:
+        import hashlib
+        h = hashlib.sha1(); root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+        for r, ds, fs in os.walk(os.path.join(root, "assets")):
+            ds[:] = sorted(d for d in ds if d != "sfx")
+            for f in sorted(fs): st = os.stat(os.path.join(r, f)); h.update(("%s/%s %d %d\n" % (os.path.relpath(r, root), f, st.st_size, st.st_mtime_ns)).encode())
+        pdir = os.path.join(root, "profiles")
+        if os.path.isdir(pdir):
+            for f in sorted(os.listdir(pdir)):
+                if f.endswith(".json"): h.update(f.encode()); h.update(open(os.path.join(pdir, f), "rb").read())
+        _KIT_SIG = h.digest()
+    return _KIT_SIG
+
+
 def _chunk_key(V, k_lo, k_hi, a, b):
     """cache key: everything that can change a pixel in frames a..b (engine code, brand env, global lists, the scenes around, assets)"""
     import hashlib, glob
@@ -2105,7 +2128,7 @@ def _chunk_key(V, k_lo, k_hi, a, b):
     if ad and os.path.isdir(ad):
         for r, _, fs in os.walk(ad):
             for f in sorted(fs): st = os.stat(os.path.join(r, f)); h.update(("%s%d%d" % (f, st.st_size, int(st.st_mtime))).encode())
-    h.update(repr((V.stages, V.st_times, V.t_end, V.tag1, V.tag2, V.btn, V.marks, FMT, a, b, [bt for bt in V.beats if a / FPS - 1 <= bt <= b / FPS + 1])).encode())
+    h.update(_kit_sig()); h.update(repr(V.entities).encode()); h.update(repr((V.stages, V.st_times, V.t_end, V.tag1, V.tag2, V.btn, V.marks, FMT, a, b, [bt for bt in V.beats if a / FPS - 1 <= bt <= b / FPS + 1])).encode())
     for kk in range(max(0, k_lo - 1), min(len(V.scenes), k_hi + 2)): h.update(repr(V.scenes[kk]).encode())
     return h.hexdigest()[:16]
 
@@ -2120,8 +2143,10 @@ def run(V, argv):
         return
     import multiprocessing as mp, tempfile, shutil
     out = argv[2]
-    cdir = os.environ.get("CTRLH_CACHE") or os.path.join(os.path.dirname(os.path.abspath(out)), ".ctrlh_cache")
-    use_cache = os.environ.get("CTRLH_CACHE", "1") != "0"; os.makedirs(cdir, exist_ok=True)
+    use_cache = os.environ.get("CTRLH_CACHE", "1") != "0"
+    # CTRLH_CACHE=0 switches the cache off (segments go to a throw-away folder); any other value is the cache folder. Paths are made absolute: ffmpeg resolves the relative paths inside the concat list against the list's own folder.
+    cdir = os.path.abspath(os.environ["CTRLH_CACHE"] if os.environ.get("CTRLH_CACHE") not in (None, "", "0") else (os.path.join(os.path.dirname(os.path.abspath(out)), ".ctrlh_cache") if use_cache else tempfile.mkdtemp(prefix="ctrlh_nocache_")))
+    os.makedirs(cdir, exist_ok=True)
     workers = int(os.environ.get("CTRLH_WORKERS") or os.cpu_count() or 2)
     segs, done = [], 0; hit = 0
     with mp.get_context("fork").Pool(workers) as pool:
@@ -2137,7 +2162,9 @@ def run(V, argv):
             segs.append(seg); done += b - a; print("frames %d/%d (cache hits: %d)" % (done, V.N, hit), flush=True)
     lst = os.path.join(cdir, "concat_%d.txt" % os.getpid()); open(lst, "w").write("".join("file '%s'\n" % sg for sg in segs))
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", "-movflags", "+faststart", out], check=True)
-    os.remove(lst); print("done", V.N, "cache hits", hit, "of", len(segs))
+    os.remove(lst)
+    if not use_cache: shutil.rmtree(cdir, ignore_errors=True)
+    print("done", V.N, "cache hits", hit, "of", len(segs))
 
 
 _V = None

@@ -1,19 +1,26 @@
 ---
 name: "ctrlh-video-style"
-description: "Use for ALL Ctrl + H videos: branded explainer videos (16:9 or 9:16) synced to Hesham's Egyptian-Arabic voiceover WAVs, plus Reels, thumbnails and scripts."
+description: "Make branded explainer videos (Wide 16:9 or Reel 9:16) synced to a voiceover WAV, in Arabic, English or mixed, with themes, cards, sound effects, optional captions and thumbnail. Designed first for regular Claude Free users: runs in Claude's own workspace, no Claude Code, terminal, paid plan or Whisper needed. Also works with Claude Code, Codex and other agents as an optional upgrade. Use for all Ctrl + H videos, Reels, thumbnails and scripts."
 ---
 
 # Video style kit (Ctrl + H engine): branded explainer videos, 16:9 or 9:16 (asked per video), synced to a voiceover
 
-Version 2.1.0. Project: https://github.com/heshamadel1/ctrl-h. The engine is generic: identity, colours, cards and background come from a brand profile (`ctrlh.config.json`). The Ctrl + H sections further down are the OWNER PROFILE (an example profile: `profiles/ctrlh.config.json`).
+Version 3.0.0. Project: https://github.com/heshamadel1/ctrl-h. The engine is generic: identity, colours, cards and background come from a brand profile (`ctrlh.config.json`). The Ctrl + H sections further down are the OWNER PROFILE (an example profile: `profiles/ctrlh.config.json`).
+
+## WHO THIS IS FOR AND WHAT IS STANDARD (read first)
+- **Primary audience: regular Claude Free users.** The Standard Claude Workflow must always work for them: the user sends a script and a voiceover WAV in a chat, answers your questions, and you run the kit in your own workspace and send the finished video. Never require, ask for or assume: Claude Code, a terminal on the user's machine, local installs, a paid plan, an external agent, Whisper, or any developer tool. Never describe the Free workflow as limited or secondary.
+- **Standard capabilities (always):** lint, render Wide/Reel, sound effects, mux, captions from the script, `align.py` default timing (silence detection, no install), `storyboard.py`, `layout_check.py` (they are plain scripts you run yourself; the user never has to).
+- **Advanced (optional, only when the environment supports it):** Claude Code, OpenAI Codex or other coding agents with shell access; Whisper alignment (`align.py --whisper`, `asr_captions.py --whisper`, needs `faster-whisper` and a model); golden tests, perf profiling (`tests/`, not shipped in the release zip).
+- **Rules for optional tools:** (1) inspect what is available first (`which ffmpeg`, `python3 -c "import faster_whisper"`) instead of assuming; (2) use an optional tool only when it gives a real benefit (e.g. timing of a long, fast voiceover); (3) install or download anything only if the environment allows it AND the user said yes; (4) never make it a requirement; (5) if it is missing or fails, fall back to the standard method and say so in one line; (6) an optional tool must never change the visual design or the kit's structure; (7) do not assume another agent has the same tools, permissions or install methods.
+- Full explanation: `docs/WORKFLOWS.md`.
 
 ## FIRST RUN SETUP (do this BEFORE anything else)
 1. Look for `ctrlh.config.json` (kit root, current folder, or `$CTRLH_CONFIG`). If it exists, read it and use it for every video; never ask these questions again unless the user asks to change the look ("change my colours", "new background", "re-run setup").
 2. If it does NOT exist and the user is not the owner (Hesham / Ctrl + H, who uses `profiles/ctrlh.config.json`): ask the setup questions below with AskUserQuestion (max 4 per call, show the preview pictures from `docs/images/` first: `cards-paper.png`, `backgrounds.png`, `cards-dark.png`), then save the answers by running `python3 engine/ctrlh_setup.py --yes --channel ... --theme ... --card-styles ... --bg-style ...` (add `--accent #RRGGBB --card-color #RRGGBB --bg-color #RRGGBB` for custom colours). Do not render a video before the setup is saved.
    - Q1 Identity: channel/brand name, handle, platforms, voiceover language, topics.
-   - Q2 Colours: one of the 3 themes (`orange` main dark, `paper_orange` light paper, `soft_cream` soft cream) or a custom accent `#RRGGBB` (optionally card colour and background base colour).
+   - Q2 Colours: one of the 3 themes (`orange` dark, `paper_orange` light paper, `soft_cream` soft cream; all three are equal, none is the "main" or default theme: the owner decides every time) or a custom accent `#RRGGBB` (optionally card colour and background base colour).
    - Q3 Cards: which card styles to use: ONE, SEVERAL or `all` of the 12 named looks (plain_dark, tag_header, glass_blur, numbered_list, outline_thin, solid_orange, neon_glow, paper_note, soft_rounded, terminal_window, step_arrows, icon_box; old short names still work)
-   - Q4 Background: hud_live (animated, default of the main theme), paper, circuit, grid, hex, dots, waves, aurora, blueprint, terminal, minimal (or his own PNG in `assets/backgrounds/`, set as `background_file`).
+   - Q4 Background: hud_live (animated, default of the `orange` theme), paper, circuit, grid, hex, dots, waves, aurora, blueprint, terminal, minimal (or his own PNG in `assets/backgrounds/`, set as `background_file`).
    - Q5 Brand assets: logo (`assets/logo_ch.png`, shown on the end card) and monogram (`assets/mono.png`, top-left); fonts (Arabic and Latin `.ttf`; defaults Cairo + Fira Code); end-card lines (default "Think Deeper." / "Build Smarter.").
    Then render the 6 s preview (`examples/cards_anim.py frames`) so the user SEES the result and can adjust before the first real video.
 3. Everything in the config can be changed later by chat ("use only glass and neon cards", "switch to the cyan theme", "background hex"): edit `ctrlh.config.json` (or rerun `ctrlh_setup.py`) and tell the user what changed. Environment variables (`CTRLH_THEME`, `CTRLH_ACCENT`, `CTRLH_CARD_COLOR`, `CTRLH_BG_COLOR`, `CTRLH_CARD_STYLES`, `CTRLH_BG_STYLE`, `BGFILE`) override the config for one command.
@@ -42,7 +49,7 @@ Owner: Hesham (Egyptian Arabic, Alexandria). Owner GitHub: https://github.com/he
 
 ## Typical request flow
 0. QUESTIONS BEFORE EVERY VIDEO (owner, 2026-11-08, MANDATORY; never decide alone, never skip, even if he answered in an earlier video). Whenever he sends material (script, WAV, post, topic) ask, with AskUserQuestion (max 4 per call, so two calls, or plain text if the tool is absent), and do not start building until he answers:
-   1. THEME (one of 3): `orange` (main dark, accent #FF8A11), `paper_orange` (cream paper, thick black borders, hard shadows, orange highlighter), `soft_cream` (white rounded cards, soft shadow, cream background with orange glow, dark H logo, soft buttons/end card). Only these 3 exist.
+   1. THEME (one of 3): `orange` (dark, accent #FF8A11), `paper_orange` (cream paper, thick black borders, hard shadows, orange highlighter), `soft_cream` (white rounded cards, soft shadow, cream background with orange glow, dark H logo, soft buttons/end card). Only these 3 exist.
    2. SIZE: 16:9 (1920x1080) or 9:16 (1080x1920). Both are native renders (`FMT=wide` / `FMT=reel`), never a crop.
    3. CAPTIONS (optional): yes or no. If yes: Arabic text in a rounded box (theme colours), orange highlighter on the key words (`[[word]]`), and EVERY English word spoken in the voice highlighted in orange (`engine/captions.py`). If no: no captions.
    4. CARDS: (a) all card types, I choose per script, (b) ONE basic card look for the whole video (name from `docs/CATALOG.md` group A, set `card_style`), (c) only certain families (A-H; turn the others off with `disabled_blocks`). If (a), pick the blocks that fit each sentence and say in one line which you used.
@@ -55,6 +62,18 @@ Owner: Hesham (Egyptian Arabic, Alexandria). Owner GitHub: https://github.com/he
 2. He records it (Google AI Studio Gemini Flash TTS WAV, usually 24 kHz mono) and sends one or several WAVs; map each file to its post by file name; if unsure ask him to send them one by one. Then build each video once, synced to the audio.
 3. Deliver each finished video TOGETHER with its thumbnail (see skill ctrlh-thumbnail-style) with SendUserFile (short caption with duration), then a short Egyptian-Arabic summary that LISTS which interactive features the video contains and at what times (he could not spot them otherwise). If he says to continue, keep going without asking again, including after a usage-limit reset.
 4. SIZE is asked per video (owner, 2026-11-08, replaces the 16:9-only rule): 16:9 or 9:16, only what he chooses is rendered (both if he says both). Ask before dropping any other deliverable. Do not render any video when he only asks for engine/skill changes or says not to (cheap checks: contact-sheet frames, or a 6 s test clip via clip.py).
+
+## THEMES AND CAPTIONS: OWNER RULES (2026-11-10)
+- There is NO "main/default" theme. Never assume or announce one; he decides per video. He can also ask for ALL 3 themes inside one video: put `theme="orange"|"paper_orange"|"soft_cream"` on each scene dict (`build.py` renders every run of same-theme scenes separately and joins them; the voice and SFX run across).
+- Captions can be delivered as a SUBTITLE FILE instead of burned in: write the tab-separated cues (`start<TAB>end<TAB>text`, text taken from the actual voice, not the post) and run `python3 engine/cues2srt.py cues.txt out.srt`. When he says "no captions / use a translation file", deliver the video without burned captions plus the .srt.
+
+## THEMES ARE HIS CHOICE (owner, 2026-11-10)
+There is NO "main" or default theme: orange, paper_orange and soft_cream are equal. Never pick one on your own and never call one "the main theme"; he chooses per video (question 1) or says "use all 3".
+- One video can use several themes: put `theme="orange"|"paper_orange"|"soft_cream"` on each scene dict; `build.py` renders each run of same-theme scenes separately and joins them (cut at scene boundaries, ideally at a stage change).
+- Subtitles can be delivered as a subtitle FILE (.srt from `engine/cues2srt.py`) instead of burned-in captions whenever he says "ملف ترجمة" / "no captions"; build the cues from the actual voice.
+
+## SYSTEM DIAGRAM BLOCK `sysdiagram` (2026-11-11): for System Design explainers
+One stateful diagram that stays on screen and changes in stages (no cuts): nodes with state outlines and badges, status pills, a DB table group (orders / outbox rows), BEGIN / COMMIT / ROLLBACK pills, lock selection, travelling envelopes, ✓ ledger chips, tilted stickers, and a stage pill ("3/5 OUTBOX TABLE"). Use it for Transactional Outbox, retry + dedupe, saga, cache invalidation, any "what fails at each step" story. Fields: docs/FEATURES.md ("sysdiagram"); demo: `examples/sysdiagram_demo_scenes.py`. Sounds are automatic (`sd_stage sd_tick sd_ok sd_err sd_env sd_sticker sd_done`). One `sysdiagram` per scene, give it nearly the whole scene (`h`), write one stage per narrated idea with `resets` at the stage changes, and use Latin node names. It counts as one block kind for the variety rules, so combine it with other kinds in the other scenes.
 
 ## VARIETY RULES (owner, 2026-11-09, MANDATORY: never reuse the same cards/blocks every video; try new things each time)
 1. Every video uses at least 8 different block kinds; no kind appears in two consecutive scenes; the card style changes between scenes.
@@ -176,7 +195,7 @@ Use them whenever the script describes a system: two things compared on scaling/
 Fixed Subscribe / Follow buttons (times via `SUB_T`, `FOL_T`), chapter banner "الجزء N من M", scene-progress dots, next-scene preview pill, scene link frame, camera push-in, alternating entry directions, SFX (`make_audio_lib.py`, library `assets/sfx`), end card with logo, Think Deeper, Build Smarter.
 
 ### 9. Themes, backgrounds, formats
-Themes: orange (main dark), paper_orange (light paper, orange highlighter), soft_cream (white rounded cards, cream bg, orange glow, dark logo); other colours via `accent`/`card_color`/`bg_color`. Backgrounds (15, picture docs/images/backgrounds.png): hud_live, circuit, grid, hex, dots, waves, aurora, blueprint, terminal, minimal, paper, cream, or an image (default, hud_dark, hud_plate). Formats: `FMT=wide` 1920x1080, `FMT=reel` 1080x1920, `OUT_W` rescales.
+Themes (all equal, the owner picks per video, never call one "main"): orange (dark), paper_orange (light paper, orange highlighter), soft_cream (white rounded cards, cream bg, orange glow, dark logo); other colours via `accent`/`card_color`/`bg_color`. Backgrounds (15, picture docs/images/backgrounds.png): hud_live, circuit, grid, hex, dots, waves, aurora, blueprint, terminal, minimal, paper, cream, or an image (default, hud_dark, hud_plate). Formats: `FMT=wide` 1920x1080, `FMT=reel` 1080x1920, `OUT_W` rescales.
 
 ### 10. Demo scene files (copy from them)
 `lk_scenes.py`, `nx3_scenes.py` (full videos), `showcase_scenes.py` (all card styles), `v3_example_scenes.py`, `v4_example_scenes.py`, `v4_terminal_gain_scenes.py`, `w_scenes.py`, `v6_blocks_scenes.py` (icards, steplist, fixcards), `v7_blocks_scenes.py` (versus, matrix, tabcard, icon3d), `v8_blocks_scenes.py` (er, queue, arch, http, diff, recap).
@@ -210,7 +229,7 @@ Themes: orange (main dark), paper_orange (light paper, orange highlighter), soft
 
 ## Voiceover sync workflow (cards never appear before their word)
 1. Segment the WAV by silence (`align_vo.segments`, RMS 10 ms hops, threshold ~-42 dB, merge gaps < 0.14 s, drop < 0.12 s); phrase START times come from segment starts. Save `<n>_segs.txt` (`name duration count` + `start-end` pairs).
-2. Transcribe PER SEGMENT with local Whisper-small int8 (sherpa-onnx, `bash run_asr7.sh <n>`; ~3 min per 2 min audio); text is only for order/wording. Run in the background with nohup and poll; a session restart kills background jobs.
+2. STANDARD: place the script lines with `python3 engine/align.py voice.wav script.txt` (silence + character share, no install). OPTIONAL (advanced, only if available and the user agreed): Whisper, either `align.py --whisper` or per-segment local Whisper-small int8 (sherpa-onnx, `bash run_asr7.sh <n>`; ~3 min per 2 min audio); the text is only for order/wording. Run it in the background with nohup and poll; a session restart kills background jobs. If Whisper is unavailable or fails, continue with the standard method.
 3. Map the script line by line onto segments in order (about 7 syllables/s); flag guessed splits honestly (cards may be off by ~0.5 s).
 4. `E(t, te, d)` = smoothstep(prog(t, te-0.12, te-0.12+min(d,0.3))). Key concepts appear at the start of the sentence.
 5. Duration = audio duration; end card at the "Ctrl H" segment; comment CTA box between the question and the end card.

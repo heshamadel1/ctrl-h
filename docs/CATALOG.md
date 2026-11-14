@@ -74,6 +74,23 @@ Picture: `blocks-sheet-1.png / blocks-sheet-2.png`
 | E05 | `hub` | hub and spokes |
 | E06 | `timeline` | timeline nodes |
 | E07 | `grid-tiles` | tiles grid |
+| E08 | `sysdiagram` | ONE stateful system diagram that changes in stages with no cut (nodes, DB tables, transactions, envelopes, stickers); works on the 3 themes; demo `examples/sysdiagram_demo_scenes.py` |
+
+Parts of `sysdiagram` (named, reusable looks):
+
+| name | what it is |
+|---|---|
+| `sd_node` | node card: icon + name, outline colour = state (idle / ok / err / hot / ghost), pulse ring on change |
+| `sd_badge` | corner badge: ok / err / ghost / lock |
+| `sd_pill` | status pill under a node: filled, `:outline` or `:dim` |
+| `sd_table_group` | DB box with a `DB` tab and two tables (orders / outbox), row chips with `placed / new / sent` |
+| `sd_lock_select` | dashed selection around a row + lock badge, check when the transaction ends |
+| `sd_txn_pill` | BEGIN (grey) / COMMIT (green) / ROLLBACK (red) beside a node |
+| `sd_envelope` | purple envelope that travels along a right-angle path (red with X when it is lost) |
+| `sd_ledger` | ✓ strip of chips (#41 #42 ...) = idempotency inbox |
+| `sd_sticker` | tilted result sticker ("Out of sync", "All or nothing") |
+| `sd_stage_pill` | pill above the panel ("3/5 OUTBOX TABLE"), swaps with a pop |
+| E08 | `sysdiagram` | stateful system diagram that changes over stages with no cut (Transactional Outbox, retries, sagas, CQRS…) |
 
 ## F. Code cards
 Picture: `blocks-sheet-1.png / blocks-sheet-2.png`
@@ -129,7 +146,7 @@ Picture: `backgrounds.png` (all 25), `bg-hud-live.png`. Any background works wit
 
 | code | name | look |
 |---|---|---|
-| J01 | `hud_live` | DEFAULT of the main theme: HUD circuit plate, animated pulses, particles, and tool chips with icons that change per scene (from scene `chips`, then tools named in the text, then `TECH`) |
+| J01 | `hud_live` | DEFAULT of the `orange` theme: HUD circuit plate, animated pulses, particles, and tool chips with icons that change per scene (from scene `chips`, then tools named in the text, then `TECH`) |
 | J02 | `paper` | cream paper with grid and dots (default of `paper_orange`) |
 | J03 | `circuit` | circuit lines |
 | J04 | `grid` | fine grid |
@@ -189,3 +206,20 @@ The old short names still work everywhere: classic = plain_dark, proposed = tag_
 
 ## Variety rules (2026-11-09)
 Each video: 8+ different block kinds, no kind in consecutive scenes, card style changes between scenes, at least 3 kinds not used in the previous video. Force specific kinds in question 4 if you want. `lint.py` prints `LINT: variety:` warnings.
+
+## Q. SysDiagram parts (added from the Transactional Outbox reference, 2026-11-10; the 3 themes)
+All of these are drawn by the one block `sysdiagram` (`engine/blocks_sysdiagram.py`, demo: `examples/sysdiagram_demo_scenes.py`).
+
+| name | what it is |
+|---|---|
+| `sd_panel` | one big rounded panel holding the whole diagram |
+| `sd_node` | node card: line icon + name, outline colour = state (idle / ok / err / hot / ghost), pulse on change, corner badge |
+| `sd_table_group` | DB box with a "DB" tab and two tables (orders / outbox), row chips with status pills (placed / new / sent) |
+| `sd_stage_pill` | tilted pill above the panel ("1/5 DUAL WRITE") that swaps with a pop |
+| `sd_txn_pill` | BEGIN (grey) / COMMIT (green) / ROLLBACK (red) pill beside a node |
+| `sd_pill` | small text pill under a node (filled, `tone:outline`, `tone:dim`) |
+| `sd_sticker` | tilted result sticker ("Out of sync", "All or nothing") |
+| `sd_ledger` | check strip with ID chips under a node (idempotency inbox) |
+| `sd_badge` | round corner badges: ok / err / ghost / lock |
+
+Animations (names): `pop_spring` (scale overshoot), `state_pulse` (outline ring on state change), `envelope_travel` (envelope with glow trail along orthogonal routes, optional stop with X), `lock_select` (dashed row selection + lock, check at commit), `status_flip` (new → sent), `fade_reset` (pills, badges, stickers and envelopes of the previous stage fade out at `resets`), `chip_stack` (ledger chips accumulate), `node_until` (a node fades out when the layout changes).

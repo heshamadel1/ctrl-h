@@ -96,3 +96,31 @@ All files live in `assets/sfx/`, named `<category>_<NN>_<name>.mp3`. Say a file 
 |---|---|---|---|
 | `pen_01_signature.mp3` | 0.96 s | signing / approval | pen-signature-5-395486.mp3 |
 | `pen_02_marker.mp3` | 6.48 s | highlight / underline | marker-pen-345733.mp3 |
+
+## SysDiagram sound map (block `sysdiagram`, automatic)
+No voice or music in the reference video: only short effects (about 38 in 27 s, mostly under 0.3 s) that sit on the visual events. The block places them itself (no pins needed); pin `SFX=[(t,"name")]` to override.
+
+| name | when | library sound |
+|---|---|---|
+| `sd_stage` | the stage pill changes | `transition_*` (random) |
+| `sd_tick` | a node, row, pill or lock appears | `click_*` |
+| `sd_ok` | green check badge, COMMIT | `success_*` |
+| `sd_err` | red X badge, ROLLBACK | `error_*` |
+| `sd_env` | an envelope starts travelling | `whoosh_02_soft` |
+| `sd_sticker` | a result sticker pops | `pop_*` |
+| `sd_done` | the last sticker (the conclusion) | `success_05_ding` |
+No two sounds of the same kind within 0.18 s, so busy moments stay clean.
+
+## sysdiagram sound map (automatic)
+`sysdiagram` places sounds by event; no pin needed. Each name below is a role that picks from the library:
+
+| role | when | library category |
+|---|---|---|
+| `sd_stage` | the stage pill changes | `transition` |
+| `sd_tick` | a node / pill / table row appears, BEGIN, lock | `click` |
+| `sd_ok` | green badge, COMMIT | `success` |
+| `sd_err` | red badge, ROLLBACK | `error` |
+| `sd_env` | an envelope starts travelling | `whoosh_02_soft` |
+| `sd_sticker` | a result sticker pops in | `pop` |
+| `sd_done` | the last sticker | `success_05_ding` |
+Same-role sounds closer than 0.18 s are skipped. Pin your own with `SFX=[(t, "name")]` as usual.

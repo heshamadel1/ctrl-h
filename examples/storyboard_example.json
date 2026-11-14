@@ -1,0 +1,20 @@
+{
+ "storyboard": 1,
+ "meta": {"title": "Storyboard example", "language": "ar", "notes": "Small example: 3 scenes, a global transition, one camera move, sound switches."},
+ "output": {"formats": ["wide", "reel"], "theme": "orange"},
+ "voiceover": {"file": "voice.wav", "script": "script.txt"},
+ "transition": "classic",
+ "stages": ["المشكلة", "الحل"],
+ "tech": ["Laravel", "Redis"],
+ "audio": {"events": {"item": 0.7}},
+ "scenes": [
+  {"id": "problem", "start": 0, "end": 7, "stage": 0, "head": "المشكلة", "say": "الموقع بطيء وكل request بيستنى الداتابيز.",
+   "blocks": [{"k": "card", "t": 1.0, "text": "كل request بيضرب الداتابيز", "ok": false},
+              {"k": "card", "t": 3.0, "text": "الصفحة بتفتح في 4 ثواني", "ok": false}]},
+  {"id": "idea", "dur": 6, "stage": 1, "head": "الفكرة", "say": "هنحط Redis كـ cache قدام الداتابيز.", "transition": "slide",
+   "blocks": [{"k": "card", "t": 8.0, "text": "Redis cache قدام الداتابيز", "ok": true}]},
+  {"id": "result", "dur": 6, "stage": 1, "head": "النتيجة", "say": "الصفحة بقت تفتح في أقل من ثانية.",
+   "camera": [[13, {"zoom": 1.0}], [16, {"zoom": 1.06}]],
+   "blocks": [{"k": "card", "t": 14.0, "text": "أقل من ثانية", "ok": true}]}
+ ]
+}

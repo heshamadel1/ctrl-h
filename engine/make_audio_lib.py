@@ -4,7 +4,7 @@ Scene-file options (all optional):
   TYPING_SPEED = 1.0 (0.7 slower / 1.4 faster keystrokes).   SFX = [(12.5, "impact_01"), (30.0, "click"), (40.2, "typing", 2.0)]   pin a sound: file prefix or category, (t, name[, seconds])
   SFX_AUTO = False                                                       only the pins, no automatic sounds
   SFX_GAIN = 1.0                                                         overall level before the 30% mix
-Automatic: scene cuts -> whoosh (chapter change -> transition), card/icards/recap items -> pop/click/tick (rotating, no repeat),
+Automatic (engine/audio_events.py decides; see docs/SOUNDS.md for the event kinds and the SFX_EVENTS / "sfx" switches): scene cuts -> whoosh (chapter change -> transition), card/icards/recap items -> pop/click/tick (rotating, no repeat),
 ok/✓ -> success, key/shock -> impact, errors -> error, code -> typing burst as long as the typing on screen."""
 import os, sys, wave, random, glob, subprocess, importlib.util
 import numpy as np
@@ -61,35 +61,11 @@ def flat(bl):
         if b.get("k") in ("row", "tiles") and "items" in b: yield from flat(b["items"])
         else: yield b
 pins = getattr(RP, "SFX", []); gain = getattr(RP, "SFX_GAIN", 1.0)
-if getattr(RP, "SFX_AUTO", True):
-    prev_stage = None; sc = RP.SC
-    for k, s in enumerate(sc):
-        big = s.get("stage") != prev_stage and k > 0; prev_stage = s.get("stage")
-        if k > 0: add(pick("transition" if big else "whoosh"), "transition" if big else "whoosh", s["t0"] - 0.1)
-        pops = ["pop", "click", "pop", "click"]; j = 0
-        for b in flat(s["blocks"]):
-            kd = b.get("k"); t0 = b.get("t", b.get("t0", s["t0"]))
-            if kd in ("card", "recap", "icards", "steplist", "fixcards", "versus", "chain", "matrix"):
-                ts = [b["t"]] if kd == "card" and "t" in b else []
-                for key in ("items", "cols", "steps", "rows"):
-                    for it in (b.get(key) if isinstance(b.get(key), (list, tuple)) else []):
-                        ti = it.get("t") if isinstance(it, dict) else (it[0] if isinstance(it, (tuple, list)) and it and isinstance(it[0], (int, float)) else None)
-                        if ti is not None: ts.append(ti)
-                for ti in ts or [t0]:
-                    c = pops[j % 4]; add(pick(c), c, ti, .8); j += 1
-                if b.get("ok") is True: add(pick("success"), "success", t0 + .2, .8)
-                if b.get("ok") is False: add(pick("error"), "error", t0 + .05, .7)
-                if b.get("key"): add(pick("impact"), "impact", t0 - .02, .6)
-            elif kd == "shock": add(pick("impact"), "impact", t0 - .05); add(pick("glitch"), "glitch", t0, .5)
-            elif kd == "mystery": add(pick("riser"), "riser", max(s["t0"], t0 - 0.2), .7)
-            elif kd == "strike": add(pick("pen"), "pen", t0, .8)
-            elif kd == "counter": add(pick("click"), "click", b.get("t0", t0), .8)
-            elif kd in ("code", "codeann"):
-                for ln in b.get("lines", []):
-                    if isinstance(ln, (tuple, list)) and len(ln) >= 2 and isinstance(ln[0], (int, float)): burst(ln[0], len(str(ln[1])) / max(1.0, float(ln[2]) if len(ln) >= 3 else 26.0))
-            elif kd == "chatwin":
-                for ln in b.get("lines", []):
-                    if isinstance(ln, (tuple, list)) and isinstance(ln[0], (int, float)): burst(ln[0], .9, .9); add(pick("success"), "success", ln[0] + 1.0, .6)
+if getattr(RP, "SFX_AUTO", True):   # every automatic sound comes from audio_events.collect(): one list of (time, kind, category, gain), same times as the animation
+    import audio_events
+    for ev in audio_events.collect(RP.SC, getattr(RP, "SFX_EVENTS", {}), os.environ.get("CTRLH_SFX_OFF", "")):
+        if ev.kind == "typing": burst(ev.t, ev.dur, ev.gain)
+        else: add(resolve(ev.name)[0] if ev.name else pick(ev.cat), ev.cat, ev.t, ev.gain)
 for pin in pins:
     t, name = pin[0], pin[1]; d = pin[2] if len(pin) > 2 else None; p, cat = resolve(name)
     if cat == "typing" and d: burst(t, d)
