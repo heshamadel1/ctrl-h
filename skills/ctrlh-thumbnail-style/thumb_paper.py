@@ -43,7 +43,7 @@ DY = -56
 if CARDS:
     lab, val, unit = LEFT; hs((110, 395 + DY, 470, 590 + DY), (255, 253, 249)); txt((290, 428 + DY), lab, font(ARB, 32), (110, 104, 92)); fv = font(FIRA, 112); txt((290, 500 + DY), val, fv, INK, ar=False)
     bb = d.textbbox((290 * S, (500 + DY) * S), val, font=fv, anchor="mm"); d.line([(bb[0] - 14 * S, bb[3] - 26 * S), (bb[2] + 14 * S, bb[1] + 26 * S)], fill=(229, 72, 77), width=10 * S); txt((290, 556 + DY), unit, font(ARB, 32), (110, 104, 92))
-    lab, val, unit = RIGHT; hs((650, 380 + DY, 1020, 598 + DY), OR); txt((835, 414 + DY), lab, font(ARB, 36), INK); txt((835, 487 + DY), val, font(FIRA, 136), INK, ar=False, stroke=1); txt((835, 560 + DY), unit, font(ARB, 40), INK)
+    lab, val, unit = RIGHT; hs((650, 380 + DY, 1020, 598 + DY), OR); txt((835, 406 + DY), lab, font(ARB, 36), INK); txt((835, 498 + DY), val, font(FIRA, 122), INK, ar=False, stroke=1); txt((835, 560 + DY), unit, font(ARB, 40), INK)
     d.polygon([(x * S, y * S) for x, y in [(492, 492 + DY), (560, 492 + DY), (560, 468 + DY), (620, 505 + DY), (560, 542 + DY), (560, 518 + DY), (492, 518 + DY)]], fill=INK)
 fk = font(FIRA, 40); w = d.textlength(KW, font=fk) / S; cx = 640
 hs((cx - w / 2 - 28, 550, cx + w / 2 + 28, 594), INK, 6, 22, 5); txt((cx, 572), KW, fk, OR, ar=False)

@@ -239,9 +239,9 @@ def draw_chain(d, box, b, t, k):
         if s.get("err"):
             te, lab = s["err"]; q = ss(prog(t, te, te + .5))
             if q > 0:
-                ex = cx0 + cw + 24; ey = ya + ch / 2; pw = _tw(lab, 26) + 76; px = cx0 + cw + 90
+                ex = cx0 + cw + 24; ey = ya + ch / 2; fs_ = _fit(lab, 26, max(60, x1 - 4 - (ex + 44) - 76), 16); pw = _tw(lab, fs_) + 76; px = min(cx0 + cw + 90, x1 - 4 - pw)   # the badge stays inside the block box (narrow formats shorten the dashed line / shrink the text; wide is unchanged)
                 _dash(d, (ex, ey), (px - 4, ey), RED, al, 4, frac=q)
-                if q > .8: _arrow(d, (px - 4, ey), 0, RED, al); d.rounded_rectangle((px, ey - 27, px + pw, ey + 27), 27, fill=A(lerp(CARDC, RED, .22), al), outline=A(RED, al), width=3); d.ellipse((px + 12, ey - 15, px + 42, ey + 15), fill=A(RED, al)); _ico(d, "x", px + 27, ey, 9, PAPER, al, 3); txt(d, (px + 56 + (pw - 76) / 2, ey), lab, 26, A(PAPER, al))
+                if q > .8: _arrow(d, (px - 4, ey), 0, RED, al); d.rounded_rectangle((px, ey - 27, px + pw, ey + 27), 27, fill=A(lerp(CARDC, RED, .22), al), outline=A(RED, al), width=3); d.ellipse((px + 12, ey - 15, px + 42, ey + 15), fill=A(RED, al)); _ico(d, "x", px + 27, ey, 9, PAPER, al, 3); txt(d, (px + 56 + (pw - 76) / 2, ey), lab, fs_, A(PAPER, al))
 
 
 # ------------------------------------------------------------------ hub

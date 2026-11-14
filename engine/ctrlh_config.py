@@ -8,7 +8,7 @@ KEYMAP = {"theme": "CTRLH_THEME", "accent": "CTRLH_ACCENT", "card_color": "CTRLH
           "label_ok": "CTRLH_LABEL_OK", "label_wrong": "CTRLH_LABEL_WRONG", "label_chapter": "CTRLH_LABEL_CHAPTER",
           "out_w": "OUT_W", "subscribe_t": "SUB_T", "follow_t": "FOL_T",
           "formats": "CTRLH_FORMATS", "disabled_blocks": "CTRLH_DISABLED_BLOCKS", "workers": "CTRLH_WORKERS", "dims": "CTRLH_DIMS",
-          "video_type": "CTRLH_VIDEO_TYPE", "max_part_seconds": "CTRLH_MAX_PART"}
+          "transition": "CTRLH_TRANSITION", "transition_dur": "CTRLH_TRANSITION_DUR", "video_type": "CTRLH_VIDEO_TYPE", "max_part_seconds": "CTRLH_MAX_PART", "sfx_off": "CTRLH_SFX_OFF", "loudness": "CTRLH_LOUDNESS"}
 PATHKEYS = ("background_file", "assets", "font_ar", "font_latin")
 CONFIG = {}; CONFIG_PATH = None
 def _find():

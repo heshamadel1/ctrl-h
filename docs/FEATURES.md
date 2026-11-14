@@ -117,6 +117,27 @@ Every block works in 16:9 and 9:16 (pictures: `blocks-sheet-1..3.png`). Names, c
 | codeann | annotated code: squiggles, tags, counter, pressure bar, caption | `t, file, lang, lines:[(t,text)], squiggle:[(t,line)], tags:[(t,line,text,'#hex')], counter:(t,text), bar:(t0,t1,'#hex'), label:(t,text,'#hex'), cap:(t,text)` (about 12 lines max) | ![sheet](images/blocks-sheet-2.png) |
 | flowmini | small flow: Command -> Message -> Handler | `t, items:[{t, kind:'pill'/'card'/'circle', name, icon, color}]` | ![sheet](images/blocks-sheet-2.png) |
 
+| sysdiagram | ONE stateful system diagram with several stages and no cut: nodes with state/badges/pills, DB table group with rows and statuses, BEGIN/COMMIT/ROLLBACK, envelopes travelling along routes, ledger chips, result stickers, stage pill | `t, h, stages:[(t,text)], resets:[t], nodes:{id:{name,icon,tone,pos:(x,y 0..1),t,until,state:[(t,'idle'/'ok'/'err'/'hot'/'ghost')],badges:[(t,'ok'/'err'/'ghost'/'lock')],pills:[(t,text,'red'/'red:outline'/'gray:dim'[,t_end])]}}, links:[(a,b)], table:{t,pos:(x0,y0,x1,y1),cols:[{key,tone}],rows:[{t,id,<key>:[(t,'placed'/'new'/'sent')]}]}, locks:[(t0,t1,row)], txn:[(t0,t1,'BEGIN'/'COMMIT'/'ROLLBACK',node)], env:[(t,[ids],tone[,stop])], ledger:{node:[(t,'#41')]}, stickers:[(t,text,tone[,t_end])]` | demo `examples/sysdiagram_demo_scenes.py` (Transactional Outbox, 27 s) |
+
+### sysdiagram (v2.1.0): one stateful system diagram
+For System Design stories (Transactional Outbox, retry, saga, cache invalidation...). The diagram stays on screen and changes state over time (no cuts). Same positions in 16:9 and 9:16; draws on orange, paper_orange and soft_cream. Demo (27 s, 5 stages): `examples/sysdiagram_demo_scenes.py`.
+
+| key | meaning |
+|---|---|
+| `t, h` | start time; optional height (default 660 wide / 1150 reel) |
+| `stages` | `[(t, "1/5 DUAL WRITE")]` stage pill above the panel |
+| `resets` | times when pills / badges / stickers / envelopes of the earlier stage fade out |
+| `nodes` | `{id: {name, icon, tone, pos:(x,y 0-1), t, until, state:[(t,'idle/ok/err/hot/ghost')], badges:[(t,'ok/err/ghost/lock'[,t_end])], pills:[(t,text,'tone[:outline|:dim]'[,t_end])]}}`; icons: cart db queue mail truck sync ghost lock check x doc |
+| `links` | `[("svc","db"), ("svc","tbl")]` right-angle lines (`"tbl"` = the table) |
+| `table` | `{t, pos:(x0,y0,x1,y1), name, cols:[{key,tone}], rows:[{t,id, <col key>:[(t,'placed/new/sent')]}]}` |
+| `locks` | `[(t0, t1, row)]` dashed selection + lock, check at t1 |
+| `txn` | `[(t0, t1, 'BEGIN'/'COMMIT'/'ROLLBACK', node)]` |
+| `env` | `[(t, [node ids], 'purple'[, stop 0.55])]` envelope along the path; `stop` = lost halfway (red, X) |
+| `ledger` | `{node: [(t, "#41")]}` ✓ strip of chips |
+| `stickers` | `[(t, text, tone[, t_end])]` tilted sticker; the last one gets the "done" ding |
+
+Tones: orange red green teal blue purple pink gray. Sounds are added automatically (`sd_stage`, `sd_tick`, `sd_ok`, `sd_err`, `sd_env`, `sd_sticker`, `sd_done`, see SOUNDS.md). Animations: `pop_spring` (overshoot pop), `state_pulse` (ring on a state change), `envelope_travel`, `lock_select`, `status_flip` (new to sent), `fade_reset` (stage change).
+
 9:16 pictures: ![sheet](images/blocks-sheet-3.png) ![sheet](images/blocks-sheet-1.png) ![sheet](images/blocks-sheet-2.png)
 
 Icons for these blocks (`icon`): user cart card code search gauge link clip server mail gear cube bell truck key lock shield db check x clock doc bolt. Add one in `_ico` of `engine/blocks_flow.py`.
@@ -129,7 +150,7 @@ chapter banner "الجزء N من M · name" (`STAGES`), scene-progress dots, ne
 ![themes](images/cards-paper.png) ![backgrounds](images/backgrounds.png)
 Config: `theme`, `bg_style`, `card_styles`, `signoff_1`, `signoff_2`.
 
-**Three themes** (the skill asks which one before each video): main dark `orange` (`hud_live`), `paper_orange` and `soft_cream` (v2.1.0: white rounded cards, light shadow, cream background with orange glow, dark H logo, soft Subscribe/Follow buttons and end card, chapter pill merged at the bottom-right). A theme's own `bg` replaces `hud_live` unless `"bg_style_locked": true`. Backgrounds are chosen separately (`bg_style`, picture `backgrounds.png`).
+**Three themes** (the skill asks which one before each video): dark `orange` (`hud_live`), `paper_orange` and `soft_cream` (v2.1.0: white rounded cards, light shadow, cream background with orange glow, dark H logo, soft Subscribe/Follow buttons and end card, chapter pill merged at the bottom-right). A theme's own `bg` replaces `hud_live` unless `"bg_style_locked": true`. Backgrounds are chosen separately (`bg_style`, picture `backgrounds.png`).
 
 Per-series theme: `"series": "name"` in the config (with `series_name`) overrides theme/accent for that series.
 

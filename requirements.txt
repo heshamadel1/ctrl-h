@@ -1,4 +1,4 @@
-# Ctrl + H Video Kit v2.1.0: versions the kit was developed and tested with (Python 3.13)
+# Ctrl + H Video Kit: versions the kit was developed and tested with (Python 3.13)
 pillow==12.3.0        # must be built with RAQM (libraqm) for Arabic: python3 -c "from PIL import features; print(features.check('raqm'))"
 numpy==2.5.3
 # optional: only for the transcription step (align / asr_seg), see docs/PIPELINE.md

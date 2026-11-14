@@ -1,7 +1,7 @@
 """Timing of every script line inside the voiceover.
 usage: python3 align.py voice.wav script.txt [--out times.json] [--whisper] [--skip-title]
 Default method (no extra install): silence detection + the characters of each line (a line starts at the pause nearest to its share of the speech).
---whisper (optional, needs `pip install faster-whisper` and a downloaded model, NOT tested in the kit's cloud workspace): uses word timestamps instead.
+--whisper (optional, needs `pip install faster-whisper` and a downloaded model): uses word timestamps instead; language from CTRLH_WHISPER_LANG (default ar). Lines are placed by their share of the words spoken (character count), not by matching the text, and any whisper failure falls back to the silence method with a message. The logic is tested with a stand-in model (tests/align_test.py); a real model has not been run in the kit's test environment.
 Script format: one sentence per line; blank lines, lines starting with '[' (section headers) and '---' are skipped; with --skip-title the first line is ignored.
 Writes times.json {"method", "duration", "lines": [{"i", "text", "t0", "t1", "section"}]} and prints `S = [...]` to paste into the scene file."""
 import sys, os, re, json, subprocess
@@ -34,7 +34,7 @@ def by_silence(wav, lines, dur):
 def by_whisper(wav, lines, dur):
     from faster_whisper import WhisperModel
     m = WhisperModel(os.environ.get("CTRLH_WHISPER_MODEL", "small"), compute_type="int8")
-    segs, _ = m.transcribe(wav, language="ar", word_timestamps=True)
+    segs, _ = m.transcribe(wav, language=os.environ.get("CTRLH_WHISPER_LANG", "ar"), word_timestamps=True)
     words = [(w.start, w.end, len(re.sub(r"\s", "", w.word))) for s in segs for w in s.words]
     if not words: raise SystemExit("whisper returned no words")
     tot = sum(x[2] for x in words); wl = weights(lines); wt = sum(wl); cum = 0; S = []; acc = []; c = 0
@@ -49,6 +49,7 @@ if __name__ == "__main__":
     if "--whisper" in sys.argv:
         try: S = by_whisper(wav, lines, dur); method = "whisper"
         except ImportError: print("faster-whisper is not installed, using silence detection instead", file=sys.stderr); S = by_silence(wav, lines, dur)
+        except Exception as e: print("whisper failed (%s: %s), using silence detection instead" % (type(e).__name__, str(e)[:160]), file=sys.stderr); S = by_silence(wav, lines, dur)   # e.g. model download blocked / offline
     else: S = by_silence(wav, lines, dur)
     T1 = S[1:] + [dur]
     doc = {"method": method, "duration": round(dur, 2), "lines": [{"i": i, "text": t, "t0": round(a, 2), "t1": round(b, 2), "section": sec} for i, ((t, sec), a, b) in enumerate(zip(lines, S, T1))]}

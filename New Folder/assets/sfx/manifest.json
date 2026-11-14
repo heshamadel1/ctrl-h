@@ -1,0 +1,206 @@
+{
+ "whoosh_01_swoosh.mp3": {
+  "category": "whoosh",
+  "use": "quick scene cut",
+  "dur": 1.06,
+  "src": "swoosh.mp3"
+ },
+ "whoosh_02_soft.mp3": {
+  "category": "whoosh",
+  "use": "scene cut",
+  "dur": 1.27,
+  "src": "transition-sfx.mp3"
+ },
+ "whoosh_03_air.mp3": {
+  "category": "whoosh",
+  "use": "scene cut",
+  "dur": 1.25,
+  "src": "transition-sfx-2-whoosh.mp3"
+ },
+ "whoosh_04_studio.mp3": {
+  "category": "whoosh",
+  "use": "scene cut",
+  "dur": 1.92,
+  "src": "studio-whoosh.mp3"
+ },
+ "whoosh_05_base.mp3": {
+  "category": "whoosh",
+  "use": "scene cut with body",
+  "dur": 1.7,
+  "src": "trading_nation-transition-base.mp3"
+ },
+ "transition_01_cinematic.mp3": {
+  "category": "transition",
+  "use": "big chapter change",
+  "dur": 3.12,
+  "src": "ast-cinematic-whoosh-modern-action-transition-.mp3"
+ },
+ "transition_02_riser_swoosh.mp3": {
+  "category": "transition",
+  "use": "big chapter change",
+  "dur": 0.99,
+  "src": "riser-swoosh-transition.mp3"
+ },
+ "transition_03_phoenix_soft.mp3": {
+  "category": "transition",
+  "use": "soft chapter change",
+  "dur": 7.0,
+  "src": "phoenix-soft-transition.mp3"
+ },
+ "impact_01_dramatic_boom.mp3": {
+  "category": "impact",
+  "use": "shock / reveal",
+  "dur": 4.3,
+  "src": "impact-transition-impact-dramatic-boom.mp3"
+ },
+ "impact_02_suspense_boom.mp3": {
+  "category": "impact",
+  "use": "dark reveal",
+  "dur": 3.02,
+  "src": "dragon-studio-suspenseful-boom-451863.mp3"
+ },
+ "riser_01_cinematic.mp3": {
+  "category": "riser",
+  "use": "build-up before a reveal",
+  "dur": 4.03,
+  "src": "dragon-studio-cinematic-riser-03-414575.mp3"
+ },
+ "glitch_01_glitch.mp3": {
+  "category": "glitch",
+  "use": "error / bug / glitchy moment",
+  "dur": 0.78,
+  "src": "glitch.mp3"
+ },
+ "typing_01_keyboard.mp3": {
+  "category": "typing",
+  "use": "code typing",
+  "dur": 8.05,
+  "src": "keyboard-typing-hd.mp3"
+ },
+ "click_01_mouse.mp3": {
+  "category": "click",
+  "use": "cursor click",
+  "dur": 0.37,
+  "src": "mouse-click.mp3"
+ },
+ "click_02_button.mp3": {
+  "category": "click",
+  "use": "button press",
+  "dur": 0.74,
+  "src": "button-pressed.mp3"
+ },
+ "click_03_tap.mp3": {
+  "category": "click",
+  "use": "light tap",
+  "dur": 1.03,
+  "src": "tap-sound.mp3"
+ },
+ "click_04_tick.mp3": {
+  "category": "click",
+  "use": "tick on a list item",
+  "dur": 3.79,
+  "src": "tick-sound-effect-1.mp3"
+ },
+ "success_01_correct.mp3": {
+  "category": "success",
+  "use": "correct / check mark",
+  "dur": 1.06,
+  "src": "training-program-correct1.mp3"
+ },
+ "success_02_notify_a.mp3": {
+  "category": "success",
+  "use": "positive notification",
+  "dur": 1.07,
+  "src": "notification-040.mp3"
+ },
+ "success_03_notify_b.mp3": {
+  "category": "success",
+  "use": "positive notification",
+  "dur": 2.46,
+  "src": "notification-051.mp3"
+ },
+ "success_04_notify_c.mp3": {
+  "category": "success",
+  "use": "notification",
+  "dur": 1.1,
+  "src": "notification-sound-effect.mp3"
+ },
+ "success_05_ding.mp3": {
+  "category": "success",
+  "use": "bell / done",
+  "dur": 2.74,
+  "src": "ding.mp3"
+ },
+ "pop_01_smooth.mp3": {
+  "category": "pop",
+  "use": "element appears",
+  "dur": 3.08,
+  "src": "pop-up-notify-smooth-modern.mp3"
+ },
+ "pop_02_cartoon.mp3": {
+  "category": "pop",
+  "use": "playful appear",
+  "dur": 1.04,
+  "src": "pop-cartoon.mp3"
+ },
+ "pop_03_sharp.mp3": {
+  "category": "pop",
+  "use": "sharp appear",
+  "dur": 1.02,
+  "src": "sharp-pop.mp3"
+ },
+ "pop_04_bubble.mp3": {
+  "category": "pop",
+  "use": "ui popup",
+  "dur": 0.65,
+  "src": "buble-ui-pop-up-8.mp3"
+ },
+ "error_01_error.mp3": {
+  "category": "error",
+  "use": "wrong / blocked",
+  "dur": 1.62,
+  "src": "error.mp3"
+ },
+ "error_02_buzzer.mp3": {
+  "category": "error",
+  "use": "denied / failed",
+  "dur": 1.91,
+  "src": "universfield-error-notification-buzzer.mp3"
+ },
+ "error_03_alert.mp3": {
+  "category": "error",
+  "use": "error alert",
+  "dur": 1.08,
+  "src": "universfield-error-notification.mp3"
+ },
+ "paper_01_flip_a.mp3": {
+  "category": "paper",
+  "use": "page / next part",
+  "dur": 2.61,
+  "src": "page-flip.mp3"
+ },
+ "paper_02_flip_b.mp3": {
+  "category": "paper",
+  "use": "page / next part",
+  "dur": 0.62,
+  "src": "freesound_community-page-flip-47177.mp3"
+ },
+ "paper_03_turn.mp3": {
+  "category": "paper",
+  "use": "page turn",
+  "dur": 1.23,
+  "src": "page-turn-305789.mp3"
+ },
+ "pen_01_signature.mp3": {
+  "category": "pen",
+  "use": "signing / approval",
+  "dur": 0.96,
+  "src": "pen-signature-5-395486.mp3"
+ },
+ "pen_02_marker.mp3": {
+  "category": "pen",
+  "use": "highlight / underline",
+  "dur": 6.48,
+  "src": "marker-pen-345733.mp3"
+ }
+}

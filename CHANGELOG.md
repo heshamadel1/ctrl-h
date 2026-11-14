@@ -1,8 +1,19 @@
 # Changelog
 
+## 3.0.0
+
+Major release (Phases 0–11): transitions, camera, persistent entities, `beam` paths, `tracks` timeline block, audio events and loudness target, render cache and speedups, block registry, `align.py`, storyboard JSON, two-format layout check, typography matrix, golden-frame tests (developer-only). Fix: `chain` error badge clipped in Reels. Claude Free workflow documented as primary (`docs/WORKFLOWS.md`), advanced agents optional. Details: `RELEASE_NOTES.md`.
+
+## 2.2.0
+
+- **New block `sysdiagram`** (reference: Transactional Outbox video): one stateful system diagram with stages, nodes + badges + pills, DB table group, BEGIN/COMMIT/ROLLBACK, travelling envelopes, ledger chips, stickers; own sound map; works on the 3 themes and in 16:9 / 9:16. Demo: `examples/sysdiagram_demo_scenes.py`.
+- Fix: thumbnail `thumb_paper.py`: the "after" label no longer touches the big value in the right card.
+- Per-scene `theme` key: one video can mix the three themes (build.py renders same-theme runs and joins them). No theme is "main"; the owner always chooses.
+- Fix: `make_audio_lib.py` crashed on blocks whose `cols` is a number (icards) and gave no typing sound for `codeann` lines with (t, text) tuples; found by the first full v2.1.0 build.
+- Named parts and sounds of `sysdiagram` are listed in docs/CATALOG.md (E08), docs/FEATURES.md and docs/SOUNDS.md; demo `examples/sysdiagram_demo_scenes.py`.
+
 ## 2.1.0
 
-- Fix: `make_audio_lib.py` crashed on blocks whose `cols` is a number (icards) and gave no typing sound for `codeann` lines with (t, text) tuples; found by the first full v2.1.0 build.
 - Variety rules: >= 8 block kinds per video, no kind in consecutive scenes, per-sentence block choice, forced kinds via question 4, new kinds each video; `lint.py` variety warnings.
 - **Third theme `soft_cream`** (from the Invitations video): white rounded cards, light shadow, cream background with orange glow, dark H logo, soft Subscribe/Follow buttons and end card, chapter banner and next-scene pill merged into one bottom-right pill. Themes: `orange`, `paper_orange`, `soft_cream` (chosen per video).
 - **Sound library:** 34 sounds in `assets/sfx/` named `<category>_<NN>_<name>.mp3`, `manifest.json`, `docs/SOUNDS.md`. New `engine/make_audio_lib.py` (used by `build.py`): automatic placement, 30% under the voice, no repeats, typing bursts as long as the on-screen typing, pins with `SFX = [(t, "name")]`, `SFX_AUTO`, `SFX_GAIN`. `CTRLH_SFX=synth` keeps the old generated sounds.

@@ -1,7 +1,7 @@
 # Contributing
 
 1. Fork, create a branch, change one thing.
-2. Run `python3 engine/smoke.py` (compile, lint every example, a frame per theme x format, SFX, docs links, setup; no video is rendered). It must print `SMOKE OK`. Look at frames of the three themes for anything visual.
+2. Run `python3 engine/smoke.py` (compile, lint every example, a frame per theme x format, SFX, docs links, setup; no video is rendered). It must print `SMOKE OK`. Look at frames of the three themes for anything visual. Engine changes can also be checked with the optional developer tool `tests/golden/golden.py` (see [TESTING.md](TESTING.md)).
 3. Names: use the descriptive card names (`plain_dark`, ...). Old names are legacy aliases only (see CATALOG).
 4. A new block needs: `draw_<kind>`, `EXTRA_H`, a SFX rule, a LINT rule if it has limits, a demo in `examples/`, an entry in `docs/FEATURES.md` and `docs/CATALOG.md`.
 5. A new sound goes in `assets/sfx/` as `<category>_<NN>_<name>.mp3` and in `docs/SOUNDS.md` / `manifest.json`.
