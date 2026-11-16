@@ -35,7 +35,7 @@ def _is_num(x): return isinstance(x, (int, float)) and not isinstance(x, bool)
 
 def _kinds():
     os.environ.setdefault("FMT", "wide"); import anim
-    return set(anim.DRAW)
+    return set(anim.DRAW) | set(getattr(anim, "ABS", {}))   # abs overlays (button, promise, ...) are block kinds too
 
 def resolve_scenes(doc):
     """[(t0, t1)] for every scene (start/end or dur chained); entries are None where a scene is unusable (validate reports why)"""
@@ -140,7 +140,7 @@ def validate(doc, deep=False):
         d = tempfile.mkdtemp(); f = os.path.join(d, "compiled_scenes.json"); json.dump(compile_doc(doc), open(f, "w", encoding="utf-8"), ensure_ascii=False)
         r = subprocess.run([sys.executable, os.path.join(HERE, "lint.py"), f], capture_output=True, text=True, cwd=d)
         for ln in (r.stdout + r.stderr).splitlines():
-            if ln.startswith("LINT"): (W if ("video_type" in ln or "logo missing" in ln) else E).append("lint: " + ln)   # video-type/logo rules are advice for a finished video, not schema errors
+            if ln.startswith("LINT"): (W if ("video_type" in ln or "logo missing" in ln or "squeezed" in ln or "variety" in ln) else E).append("lint: " + ln)   # video-type/logo/squeeze/variety rules are layout advice, not schema errors
     return E, W
 
 def compile_doc(doc):

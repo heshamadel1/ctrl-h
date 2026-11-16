@@ -22,6 +22,15 @@ def draw_beam_block(d, box, b, t, k):
     if t < b["t"]: return
     layer = d._image; nw, nh = (230, 70) if WIDE else (196, 84); fs = 26 if WIDE else 28
     rect = _bm_rects(b, box, nw, nh); nodes = b.get("nodes", {})
+    import audio_events as _ae; _hits = [(ta, nid) for _tl, ta, nid in _ae.beam_pulses(b)]
+    def lit(nid):   # 0..1: the node that receives a pulse lights up for ~0.7 s ("glow": False on a node turns it off)
+        g = 0.0
+        for ta, n_ in _hits:
+            if n_ != nid: continue
+            dt = t - ta
+            if -0.1 <= dt < 0: g = max(g, 1 + dt / 0.1)
+            elif 0 <= dt < 0.7: g = max(g, (1 - dt / 0.7) ** 1.3)
+        return g
     def node_a(nid):
         nd = nodes[nid]; a = E(t, nd.get("t", b["t"]), 0.35)
         if nd.get("until") is not None: a *= 1 - prog(t, nd["until"], nd["until"] + 0.3)
@@ -51,7 +60,10 @@ def draw_beam_block(d, box, b, t, k):
         if a <= 0.01: continue
         nd = nodes[nid]; col = _sdc(nd.get("tone", "orange")); cx, cy = (r[0] + r[2]) / 2, (r[1] + r[3]) / 2; sc = 0.92 + 0.08 * a
         rr = (cx - nw * sc / 2, cy - nh * sc / 2, cx + nw * sc / 2, cy + nh * sc / 2)
-        d.rounded_rectangle(rr, 18, fill=A(lerp(_SD_PANEL, col, .12), a), outline=A(col, a), width=3)
+        g = lit(nid) * a if nd.get("glow", True) else 0.0
+        if g > 0.01:
+            for j in range(4, 0, -1): d.rounded_rectangle((rr[0] - j * 5, rr[1] - j * 5, rr[2] + j * 5, rr[3] + j * 5), 18 + j * 5, outline=A(col, g * 0.22 / j * 2), width=4)
+        d.rounded_rectangle(rr, 18, fill=A(lerp(lerp(_SD_PANEL, col, .12), col, 0.45 * g), a), outline=A(lerp(col, (255, 255, 255), 0.5 * g), a), width=3 + int(2 * g))
         _bt(d, (cx, cy), nd.get("name", nid), fs, A((14, 14, 12) if LIGHT else (245, 245, 245), a))
 EXTRA_H["beam"] = lambda blk, w: blk.get("h", 620 if WIDE else 1000)
 DRAW["beam"] = draw_beam_block

@@ -207,7 +207,7 @@ Chips cross-fade when they change between scenes. Static alternatives: `"bg_styl
 Plate image: `assets/backgrounds/hud_plate.png` (override with `CTRLH_HUD_PLATE`). Size and render time are the same as the static background.
 
 ## 13. Sound library, captions and 9:16 (v2.1.0)
-- **Sounds:** 34 named sounds in `assets/sfx/` placed automatically at 30% under the voice, or pinned with `SFX = [(t, "name")]`: [SOUNDS.md](SOUNDS.md).
+- **Sounds:** 34 named sounds in `assets/sfx/` placed automatically at 42% of the voice level, or pinned with `SFX = [(t, "name")]`: [SOUNDS.md](SOUNDS.md).
 - **Captions (optional):** `engine/captions.py cues.txt in.mp4 out.mp4`: Arabic in a box, orange highlight on `[[key words]]` and on every English word.
 - **Formats:** 16:9 and 9:16 are both native renders of the same scene file (not a crop).
 - **How-to template:** `examples/template_howto_scenes.py`, 58 s 16:9, `# EDIT` lines.

@@ -1,5 +1,29 @@
 # Changelog
 
+## 3.0.1
+
+Fixes bug found while making Reel (first real use of the 3.0.0 features), plus three small tools from making the Kit promo reel.
+
+- **`build.py --audio-only`:** re-makes the SFX, re-cuts the voice, re-mixes and re-normalises on the frames of the last full build, with no render (about 20 s instead of 8 to 10 minutes). Use it after a change to SFX pins, the mix level, loudness or a new voice WAV of the same length. It stops with a clear message when the frames are missing or the scene length changed.
+- **Scene option `valign: "mid"`:** puts the block stack lower on the screen (useful for a reel without captions).
+- **`align.py --asr`:** places every script line by matching its TEXT against what was really said (fuzzy characters, Arabic letter variants, order kept, snapped to the phrase start), instead of guessing from line length. Input: `asr.json` from the new `engine/asr_phrases.py` (offline Whisper ONNX, phrases cut at pauses) or `#N t0-t1: text` lines. Warns when script and recording look different. The old `asr_seg.py` / `run_asr.sh` are unchanged.
+
+- **SFX level:** the real mix (`engine/mix2.txt`) was ducking the sounds hard under the voice (ratio 6), so they were barely audible, while docs said "30%". Now the SFX is 42% of the voice level (`volume=0.593` after the voice +3 dB), no sidechain ducking. `sfx_preview.py`, docs, README and the skill state the same number.
+- **`promise` pill:** locked-state text colour is now light, readable on light themes (paper, cream).
+- **`scenefile.load`:** accepts scene names with a trailing `.py`.
+- **Storyboard:** `validate`/`import` accept the overlay kinds (`promise`, button); the squeezed/variety deep-lint lines are warnings, not errors.
+- **`align.py`:** the silence method picked the nearest pause for each line separately, so slow voices got duplicate or swapped starts. Now one strictly increasing start per line (dynamic programming, each pause used once). Test added.
+- **Sound for errors:** a struck-out (wrong) card now plays an error sound, the strike line a razor cut and the right answer a success chime, instead of the pen stroke. Item, click and chime sounds vary (no same file twice in a row).
+- **Beam:** the node that receives a light pulse lights up (about 0.7 s) and plays a chime; a travelling pulse plays a soft whoosh. New events `beam_pulse` and `beam_hit`; `"glow": False` on a node turns the light off.
+- **`SFX_AUTO_ONLY`:** with `SFX_AUTO = False` keep hand-placed pins and the automatic sounds of just the listed kinds (beam, typing).
+- **Typing sound** is a burst of exactly the on-screen typing time (`SFX_AUTO_ONLY` once played the whole 8 s clip).
+- **Paper background:** dot ripple, drifting particles and breathing glow. `CTRLH_BG_MOTION=off` turns it off. Golden frames render with it off, so no baseline changed.
+- **Docs:** the sound library is 35 sounds (`razor_01_cut` was missing from `SOUNDS.md`; every count says 35).
+- **Theme rule in the skill:** the owner's videos use `paper_orange` without a question; anyone else using the skill is always asked which theme.
+- **Golden:** new case `G10_bg_motion` (12 frames, animated paper background, wide and reel) approved by the owner; the other cases still render with the background animation off.
+- **End card on light themes:** `paper_orange` (like `soft_cream`) now ends on a light paper background with dark logo letters, orange C and dark/orange sign-off; dark themes keep the black end card.
+- **Skill:** version 3.0.1: manual SFX workflow, new events, background motion, SFX at 42%.
+
 ## 3.0.0
 
 Major release (Phases 0–11): transitions, camera, persistent entities, `beam` paths, `tracks` timeline block, audio events and loudness target, render cache and speedups, block registry, `align.py`, storyboard JSON, two-format layout check, typography matrix, golden-frame tests (developer-only). Fix: `chain` error badge clipped in Reels. Claude Free workflow documented as primary (`docs/WORKFLOWS.md`), advanced agents optional. Details: `RELEASE_NOTES.md`.

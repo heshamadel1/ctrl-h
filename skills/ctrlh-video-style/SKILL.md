@@ -5,7 +5,7 @@ description: "Make branded explainer videos (Wide 16:9 or Reel 9:16) synced to a
 
 # Video style kit (Ctrl + H engine): branded explainer videos, 16:9 or 9:16 (asked per video), synced to a voiceover
 
-Version 3.0.0. Project: https://github.com/heshamadel1/ctrl-h. The engine is generic: identity, colours, cards and background come from a brand profile (`ctrlh.config.json`). The Ctrl + H sections further down are the OWNER PROFILE (an example profile: `profiles/ctrlh.config.json`).
+Version 3.0.1. Project: https://github.com/heshamadel1/ctrl-h. The engine is generic: identity, colours, cards and background come from a brand profile (`ctrlh.config.json`). The Ctrl + H sections further down are the OWNER PROFILE (an example profile: `profiles/ctrlh.config.json`).
 
 ## WHO THIS IS FOR AND WHAT IS STANDARD (read first)
 - **Primary audience: regular Claude Free users.** The Standard Claude Workflow must always work for them: the user sends a script and a voiceover WAV in a chat, answers your questions, and you run the kit in your own workspace and send the finished video. Never require, ask for or assume: Claude Code, a terminal on the user's machine, local installs, a paid plan, an external agent, Whisper, or any developer tool. Never describe the Free workflow as limited or secondary.
@@ -54,7 +54,7 @@ Owner: Hesham (Egyptian Arabic, Alexandria). Owner GitHub: https://github.com/he
    3. CAPTIONS (optional): yes or no. If yes: Arabic text in a rounded box (theme colours), orange highlighter on the key words (`[[word]]`), and EVERY English word spoken in the voice highlighted in orange (`engine/captions.py`). If no: no captions.
    4. CARDS: (a) all card types, I choose per script, (b) ONE basic card look for the whole video (name from `docs/CATALOG.md` group A, set `card_style`), (c) only certain families (A-H; turn the others off with `disabled_blocks`). If (a), pick the blocks that fit each sentence and say in one line which you used.
    5. BACKGROUND (optional, pick ONE): `hud_live`, circuit, grid, hex, dots, waves, aurora, blueprint, terminal, minimal, paper, cream, `tech:<name>` (nextjs react laravel wp docker node rest db redis git; 16:9 only), or an image (`default`, `hud_dark`, `hud_plate`); show `docs/images/backgrounds.png` first. "Theme default" is a valid answer (orange -> hud_live, paper_orange -> paper, soft_cream -> cream). Set `bg_style` (add `bg_style_locked` when it differs from the theme default).
-   6. SOUND EFFECTS: either he names specific sounds for specific moments (file names or `category_NN` from `docs/SOUNDS.md`, e.g. "at the reveal use impact_01", written as `SFX = [(t, "impact_01")]`), or Claude chooses by the video (automatic: 30% under the voice, varied, no back-to-back repeats). If he names only some, the rest is automatic unless he says `SFX_AUTO = False`.
+   6. SOUND EFFECTS: either he names specific sounds for specific moments (file names or `category_NN` from `docs/SOUNDS.md`, e.g. "at the reveal use impact_01", written as `SFX = [(t, "impact_01")]`), or Claude chooses by the video (automatic: 42% of the voice level, no ducking, varied, no back-to-back repeats). If he names only some, the rest is automatic unless he says `SFX_AUTO = False`.
    7. THUMBNAIL (optional): yes or no (skill ctrlh-thumbnail-style). Playlist cover only when asked.
    Plus the older questions of the first-run setup if there is no `ctrlh.config.json`. Never remake an already delivered video unless he asks.
 1. He sends a post (or just a topic); first write or edit the post (if asked) and the VOICEOVER SCRIPT (copy-paste ready, numbered scenes with rough timestamps or plain lines, English terms spelled in English, code spoken as words e.g. "Order all" not `Order::all()`, no emoji, hook in the first 5 s, question + comment CTA, ends with "Ctrl H. Think Deeper. Build Smarter."). Save batches of posts+scripts in one txt file and send it. Do NOT build the video before the audio exists.
@@ -64,11 +64,11 @@ Owner: Hesham (Egyptian Arabic, Alexandria). Owner GitHub: https://github.com/he
 4. SIZE is asked per video (owner, 2026-11-08, replaces the 16:9-only rule): 16:9 or 9:16, only what he chooses is rendered (both if he says both). Ask before dropping any other deliverable. Do not render any video when he only asks for engine/skill changes or says not to (cheap checks: contact-sheet frames, or a 6 s test clip via clip.py).
 
 ## THEMES AND CAPTIONS: OWNER RULES (2026-11-10)
-- There is NO "main/default" theme. Never assume or announce one; he decides per video. He can also ask for ALL 3 themes inside one video: put `theme="orange"|"paper_orange"|"soft_cream"` on each scene dict (`build.py` renders every run of same-theme scenes separately and joins them; the voice and SFX run across).
+- THEME RULE (owner, 2026-11-15): for the OWNER's own videos (Hesham, Ctrl + H) use `paper_orange` without asking. For ANY OTHER person using this skill, ALWAYS ask which theme (orange, paper_orange or soft_cream) before making a video and never assume one for them. He can also ask for ALL 3 themes inside one video: put `theme="orange"|"paper_orange"|"soft_cream"` on each scene dict (`build.py` renders every run of same-theme scenes separately and joins them; the voice and SFX run across).
 - Captions can be delivered as a SUBTITLE FILE instead of burned in: write the tab-separated cues (`start<TAB>end<TAB>text`, text taken from the actual voice, not the post) and run `python3 engine/cues2srt.py cues.txt out.srt`. When he says "no captions / use a translation file", deliver the video without burned captions plus the .srt.
 
 ## THEMES ARE HIS CHOICE (owner, 2026-11-10)
-There is NO "main" or default theme: orange, paper_orange and soft_cream are equal. Never pick one on your own and never call one "the main theme"; he chooses per video (question 1) or says "use all 3".
+Theme: the owner (Hesham) always uses `paper_orange`, no theme question. Anyone else: ask question 1 (theme) every video with the 3 options; they can say "use all 3".
 - One video can use several themes: put `theme="orange"|"paper_orange"|"soft_cream"` on each scene dict; `build.py` renders each run of same-theme scenes separately and joins them (cut at scene boundaries, ideally at a stage change).
 - Subtitles can be delivered as a subtitle FILE (.srt from `engine/cues2srt.py`) instead of burned-in captions whenever he says "ملف ترجمة" / "no captions"; build the cues from the actual voice.
 
@@ -236,7 +236,7 @@ Themes (all equal, the owner picks per video, never call one "main"): orange (da
 
 ## Audio
 - Voice: `aresample=48000,volume=3dB`, mono to stereo. NEVER loudnorm.
-- SFX (v2.1.0): the 34-sound library `assets/sfx/` placed by `engine/make_audio_lib.py` (see docs/SOUNDS.md; pins `SFX`, `SFX_AUTO`, `SFX_GAIN`; mix 30% under the voice). The old synthesized SFX (make_audio.py, `CTRLH_SFX=synth`): plucks/clicks, ding for right, thud for wrong, thump+ping for key cards, counter ticks, flow whooshes, promise chime, fixed Subscribe (0:45) / Follow (DUR-40) button sounds, end-card pings, alternating transition whooshes), ducked under the voice. Mix (mix2.txt): `[1:a]aresample=48000,volume=3dB,pan=stereo|c0=c0|c1=c0,asplit=2[v][vs];[2:a]volume=0.55[m];[m][vs]sidechaincompress=threshold=0.03:ratio=6:attack=15:release=350[md];[v][md]amix=inputs=2:normalize=0:duration=longest,alimiter=limit=0.85:level=disabled,volume=0.8[a]`. Mux: `-map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -t <DUR>`.
+- SFX (v2.1.0): the 34-sound library `assets/sfx/` placed by `engine/make_audio_lib.py` (see docs/SOUNDS.md; pins `SFX`, `SFX_AUTO`, `SFX_GAIN`; mix at 42% of the voice level, no ducking). The old synthesized SFX (make_audio.py, `CTRLH_SFX=synth`): plucks/clicks, ding for right, thud for wrong, thump+ping for key cards, counter ticks, flow whooshes, promise chime, fixed Subscribe (0:45) / Follow (DUR-40) button sounds, end-card pings, alternating transition whooshes), ducked under the voice. Mix (mix2.txt): `[1:a]aresample=48000,volume=3dB,pan=stereo|c0=c0|c1=c0,asplit=2[v][vs];[2:a]volume=0.55[m];[m][vs]sidechaincompress=threshold=0.03:ratio=6:attack=15:release=350[md];[v][md]amix=inputs=2:normalize=0:duration=longest,alimiter=limit=0.85:level=disabled,volume=0.8[a]`. Mux: `-map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -t <DUR>`.
 - Verify audio by analysis only.
 
 ## Arabic/RTL rules (Pillow RAQM)
@@ -270,3 +270,15 @@ Light theme: `theme: paper_orange`. Blocks: `quote` (t,who,lines,hl), `chatwin` 
 
 ## Live background + topic chips (default `bg_style: hud_live`)
 The HUD background is animated; its bottom chips show the tools of each scene. Rule: when a scene discusses specific tools, add `chips=["Tool1", "Tool2"]` (max 3, exact names as in the script); otherwise the engine picks tools from the scene text, then falls back to `TECH`. Do not hard-code chips in the background image.
+
+## 3.0.1 sound and background rules (owner, 2026-11-15)
+- SFX level is 42% of the voice level, no ducking (`engine/mix2.txt`). The library has 35 sounds.
+- Pick sounds by meaning, not one per card: error for a wrong card, razor for the strike line, success for the right answer, riser into a reveal, glitch and error for warnings, transition per chapter, varied pop/click/success (never the same file twice in a row). Never pen/handwriting sound on a struck-out card.
+- For a video that needs care, place the sounds by hand: `SFX_AUTO = False`, `SFX = [(seconds, "pop_01"), (seconds, "typing", duration)]`, and keep the automatic sound of only some kinds with `SFX_AUTO_ONLY = ["beam_pulse", "beam_hit", "typing"]`. Time them from the voice segments, and after a change re-mix audio only (vo + sfx + loudness), never re-render for a sound fix.
+- Typing sound = a burst of the on-screen typing time. Set the code line speed (chars per second) so the typing lasts as long as the words it goes with, and the sound stops when the typing stops.
+- Beam: the receiving node lights up and chimes when a pulse arrives, a pulse leaving plays a soft whoosh (`"glow": False` on a node turns the light off).
+- The `paper` background is animated (ripple on the dot grid, drifting particles, breathing glow); `CTRLH_BG_MOTION=off` turns it off. Reels with it can pass 30 MB: compress with x264 crf 24 before sending.
+- `align.py` returns one strictly increasing start per line (no duplicate or swapped starts on slow voices); Whisper segments stay the most accurate when available.
+- `align.py voice.wav script.txt --asr asr.json` matches each script line to the spoken text (fuzzy, tolerant of ASR errors); make asr.json with `engine/asr_phrases.py` (offline Whisper ONNX model folder). Prefer it over character-share timing when a model is available.
+- `build.py <scene> --audio-only` re-mixes SFX/voice/loudness in ~20 s after changing pins or the mix (needs a previous full build); scene option `valign: "mid"` lowers the block stack for reels without captions.
+- The end card follows the theme: light themes (`paper_orange`, `soft_cream`) end on a light paper background with a dark logo (orange C, dark H and wordmark); dark themes end on black.

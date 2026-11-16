@@ -196,7 +196,7 @@ Scene: `style, t0, t1, stage, head, head_t, blocks, grid, cw, reserve, reserve_r
 Full parameters of every block: `skills/ctrlh-video-style/REFERENCE.md`.
 
 ## N. Sounds (v2.1.0)
-34 sounds in `assets/sfx/`, named `<category>_<NN>_<name>.mp3` (whoosh, transition, impact, riser, glitch, typing, click, pop, success, error, paper, pen). Full list: [SOUNDS.md](SOUNDS.md). Pin one: `SFX = [(12.5, "impact_01")]` in the scene file.
+35 sounds in `assets/sfx/`, named `<category>_<NN>_<name>.mp3` (whoosh, transition, impact, riser, glitch, typing, click, pop, success, error, paper, pen). Full list: [SOUNDS.md](SOUNDS.md). Pin one: `SFX = [(12.5, "impact_01")]` in the scene file.
 
 ## O. Captions (v2.1.0, optional)
 `engine/captions.py`: Arabic text in a rounded box, `[[key words]]` and every English word highlighted in orange. See [PIPELINE.md](PIPELINE.md#8-captions-optional).

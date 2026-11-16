@@ -33,3 +33,8 @@ sc = motion.spring(t, t0, k=22, damping=0.5, a=0.8, b=1.0)      # settle with a 
 
 ## Limits
 No block uses the new primitives yet (they are the base for the next phases: transitions, transforms, paths). Standard Claude workflow: nothing changes. Advanced: `python3 tests/motion_test.py` (developer only).
+
+
+## Paper background motion (3.0.1)
+
+The `paper` background is alive: a diagonal ripple lights the dot grid in the accent colour, soft accent particles drift up, and a slow glow breathes in two corners. Turn it off with `CTRLH_BG_MOTION=off`. The golden frames render with it off (the animation is time-varying and not part of the block baselines).
