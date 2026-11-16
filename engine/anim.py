@@ -885,7 +885,7 @@ def abs_promise(OV, b, t):
     pk = prog(t, tu, tu + 0.5); glow = math.sin(math.pi * pk) if 0 < pk < 1 else 0
     fill = OR if op else (20, 22, 27)
     d.rounded_rectangle((x0 - glow * 8, y0 - glow * 8, x1 + glow * 8, y0 + h + glow * 8), 36, fill=A(fill, al), outline=A(OR if not op else INK, al), width=4)
-    txt(d, (x0 + 100 + (w - 130) / 2, y0 + h / 2), text, 30, A(PAPER if not op else INK, al))
+    txt(d, (x0 + 100 + (w - 130) / 2, y0 + h / 2), text, 30, A((245, 245, 245) if not op else INK, al))   # locked pill is always dark: its text must be light (PAPER turns into ink on light themes)
     ix, iy = x0 + 48, y0 + h / 2
     if not op:
         d.rounded_rectangle((ix - 14, iy - 2, ix + 14, iy + 20), 5, fill=A(OR, al)); d.arc((ix - 10, iy - 22, ix + 10, iy + 6), 180, 360, fill=A(OR, al), width=5)
@@ -1154,10 +1154,11 @@ def _soft_logo():
 
 
 def end_frame(t, T_END, TAG1, TAG2):
-    if SOFT:
+    if SOFT or _T.get("light"):   # light themes (soft_cream, paper_orange): light end card, dark logo letters, orange C
         import bg_styles
         a = ss(prog(t, T_END + 0.2, T_END + 0.9)); bump = math.sin(math.pi * prog(t, T_END + 1.5, T_END + 2.3)) ** 2
-        im = bg_styles._cream(W, H, (242, 237, 224), None, None).convert("RGBA"); d = ImageDraw.Draw(im)
+        im = (bg_styles._cream(W, H, (242, 237, 224), None, None) if SOFT else bg_styles._paper(W, H, _T.get("base", (242, 237, 224)), None, None)).convert("RGBA")
+        d = ImageDraw.Draw(im)
         sz = int(760 * (1 + 0.04 * bump)); lg = _soft_logo().resize((sz, sz), Image.LANCZOS)
         al_ = lg.getchannel("A").point(lambda v: int(v * a)); lg.putalpha(al_)
         im.alpha_composite(lg, (W // 2 - sz // 2, (160 if WIDE else 520) + (760 - sz) // 2))
@@ -1221,6 +1222,28 @@ def bg_motion(im, t):
         d.ellipse((gx - 4, gy - 4, gx + 4, gy + 4), fill=OR + (int(30 + 150 * tw),))
     im.alpha_composite(L)
 
+
+def _paper_bg_on():
+    st = (os.environ.get("CTRLH_BG_STYLE") or _T.get("bg") or "").lower()
+    return st == "paper" and os.environ.get("CTRLH_BG_MOTION", "on").lower() not in ("off", "0", "no")
+def paper_motion(im, t):
+    """life for the paper background (v3.0.1): a diagonal ripple lights the dot grid in the accent colour, soft accent particles drift up, a slow breathing glow. CTRLH_BG_MOTION=off turns it off."""
+    S = W / 1920.0 if W > H else H / 1920.0; step = int(64 * S); L = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(L)
+    br = 0.5 + 0.5 * math.sin(2 * math.pi * t / 6.0)
+    g = _sprite(int(380 * S), OR, 0.10 + 0.07 * br); im.alpha_composite(g, (int(W * 0.88 - g.width / 2), int(H * 0.9 - g.height / 2))); im.alpha_composite(g, (int(W * 0.08 - g.width / 2), int(H * 0.08 - g.height / 2)))
+    cyc = 5.5; ph = (t % cyc) / cyc; ctr = ph * (W + H) * 1.25 - 0.25 * (W + H)   # ripple front position along (x + y)
+    for x in range(step, W, step):
+        for y in range(step, H, step):
+            v = math.exp(-(((x + y * 0.9) - ctr) / (150.0 * S)) ** 2)
+            tw = 0.5 + 0.5 * math.sin(t * 1.3 + x * 0.013 + y * 0.021)
+            a = v * 215 + 28 * tw * tw
+            if a > 14: rr = 2 + 3.2 * v + 0.8 * tw; d.ellipse((x - rr, y - rr, x + rr, y + rr), fill=OR + (int(min(235, a)),))
+    for i in range(16):   # drifting particles
+        per = 16.0 + (i % 5) * 3.0; q = ((t + i * 2.9) % per) / per
+        px = (((i * 211) % 97) / 97.0) * W + 22 * S * math.sin(2 * math.pi * q * 2 + i); py = H * (1.06 - 1.12 * q)
+        r = (5 + (i % 4) * 3) * S; al = int(95 * math.sin(math.pi * q) ** 1.2)
+        d.ellipse((px - r, py - r, px + r, py + r), fill=OR2 + (al,))
+    im.alpha_composite(L.filter(ImageFilter.GaussianBlur(0.6)))
 
 # ------------------------------------------------------------------ engine
 # ------------------------------------------------------------------ extra blocks (2026-10-31): icards, steplist, fixcards
@@ -1980,7 +2003,7 @@ class Video:
                 s_["reserve"] = max(s_.get("reserve", 0), 200); s_["reserve_reel"] = max(s_.get("reserve_reel", 0), 260)
         self.lay = []; self.warn = []
         for si_, s_ in enumerate(scenes):
-            self.lay.append(layout(s_["blocks"], s_.get("reserve", 0) if WIDE else s_.get("reserve_reel", 0), True, s_.get("cw")))
+            self.lay.append(layout(s_["blocks"], s_.get("reserve", 0) if WIDE else s_.get("reserve_reel", 0), s_.get("valign", "top") != "mid", s_.get("cw")))   # valign="mid": block stack sits lower (a reel without captions)
             if layout.scale < 0.999: self.warn.append("scene %d (t=%.1f-%.1f): content too tall, squeezed to %d%% (split the scene or use fewer cards if it looks cramped)" % (si_, s_["t0"], s_["t1"], layout.scale * 100))
             for b_ in s_["blocks"]:
                 if b_["k"] == "counter":   # the number on screen must be the number the voice says
@@ -2067,7 +2090,8 @@ class Video:
             im = self.hud.frame(t, self.chips[k], ca_)
         else:
             im = self.bg.copy()
-            bg_motion(im, t)
+            if _paper_bg_on(): paper_motion(im, t)
+            else: bg_motion(im, t)
         pa_ = self._paper_a(k, t)   # optional paper look (scene key paper=True): cream background, cross-faded at the scene edges
         im.alpha_composite(tabs_layer(t, self.stages, self.st_times, self.t_end, self.marks))
         if pa_ > 0.003: im.alpha_composite(Image.new("RGBA", (W, H), CREAM + (int(255 * pa_),)))

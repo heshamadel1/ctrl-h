@@ -1,7 +1,8 @@
 """One command from scene file + voiceover to finished videos.
 usage (run from the scene file's folder):
-  python3 build.py <scenes_module> --vo voice.wav [--out DIR] [--formats wide,reel] [--max-part 180] [--strict] [--plan-only] [--check-voice]
+  python3 build.py <scenes_module> --vo voice.wav [--out DIR] [--formats wide,reel] [--max-part 180] [--strict] [--plan-only] [--check-voice] [--audio-only]
 Steps: lint (--strict stops on any LINT line) -> contact sheet -> split plan -> per part and format: render (scene cache) -> SFX -> voice cut -> mux -> meta.md.
+--audio-only: no render. Re-makes the SFX, re-cuts the voice, re-mixes and re-normalises on the video frames of the last full build (<tag>_v.mp4 in --out): use it after a change to SFX pins, the mix level, loudness or a new voice WAV of the same length. Any change to scenes/blocks/theme needs a normal build.
 Formats default to config `formats` (["wide"]); 9:16 only when you list "reel". Long videos are split at the scene boundary nearest to equal parts
 (config `max_part_seconds`, default 180). Frame times stay global, so one scene file serves every part."""
 import sys, os, json, math, subprocess, importlib
@@ -43,6 +44,12 @@ for fmt in formats:
     for pi, (a, b) in enumerate(parts, 1):
         tag = "%s_%s%s" % (base, "part%d_" % pi if len(parts) > 1 else "", fmt); vid = os.path.join(out, tag + "_v.mp4")
         env = dict(os.environ, FMT=fmt, CTRLH_T0="%.3f" % a, CTRLH_T1="%.3f" % b, CTRLH_CACHE=os.environ.get("CTRLH_CACHE", os.path.join(out, ".ctrlh_cache")))
+        audio_only = "--audio-only" in sys.argv
+        if audio_only:
+            if not os.path.isfile(vid): sys.exit("--audio-only needs the frames of an earlier full build: %s is missing. Run the build once without --audio-only." % vid)
+            _vd = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", vid], capture_output=True, text=True).stdout.strip() or 0)
+            if abs(_vd - (b - a)) > 0.2: sys.exit("--audio-only: %s is %.1f s but the scene file says %.1f s; the scene file changed, run a normal build." % (os.path.basename(vid), _vd, b - a))
+            print("AUDIO-ONLY %s: re-using %s (no render)" % (tag, os.path.basename(vid)), flush=True)
         # per-scene theme (scene key "theme"): render each run of same-theme scenes separately, then join (owner 2026-11-10: use the 3 themes in one video)
         base_theme = os.environ.get("CTRLH_THEME", ""); runs = []
         for sc_ in N.SC:
@@ -51,7 +58,8 @@ for fmt in formats:
             else: runs.append([sc_["t0"], sc_["t1"], th])
         runs[0][0] = min(runs[0][0], a); runs[-1][1] = max(runs[-1][1], b)
         runs = [[max(x, a), min(y, b), th] for x, y, th in runs if min(y, b) > max(x, a)]
-        if len(runs) <= 1:
+        if audio_only: pass
+        elif len(runs) <= 1:
             sh([py, os.path.join(here, "render.py"), mod, vid], env=dict(env, **({"CTRLH_THEME": runs[0][2]} if runs and runs[0][2] else {})))
         else:
             segs_ = []

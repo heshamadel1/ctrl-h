@@ -1,6 +1,6 @@
-# SOUNDS — Ctrl + H sound library (34 sounds)
+# SOUNDS — Ctrl + H sound library (35 sounds)
 
-All files live in `assets/sfx/`, named `<category>_<NN>_<name>.mp3`. Say a file name (or just `category_NN`) to pin it to a moment; otherwise the engine picks by category, mixed at 30% under the voice with no back-to-back repeats.
+All files live in `assets/sfx/`, named `<category>_<NN>_<name>.mp3`. Say a file name (or just `category_NN`) to pin it to a moment; otherwise the engine picks by category, mixed at 42% of the voice level with no back-to-back repeats.
 
 
 ## whoosh
@@ -96,6 +96,7 @@ All files live in `assets/sfx/`, named `<category>_<NN>_<name>.mp3`. Say a file 
 |---|---|---|---|
 | `pen_01_signature.mp3` | 0.96 s | signing / approval | pen-signature-5-395486.mp3 |
 | `pen_02_marker.mp3` | 6.48 s | highlight / underline | marker-pen-345733.mp3 |
+| `razor_01_cut.mp3` | 0.16 s | timeline razor / split, strike-through line | generated for Ctrl H |
 
 ## SysDiagram sound map (block `sysdiagram`, automatic)
 No voice or music in the reference video: only short effects (about 38 in 27 s, mostly under 0.3 s) that sit on the visual events. The block places them itself (no pins needed); pin `SFX=[(t,"name")]` to override.
@@ -124,3 +125,12 @@ No two sounds of the same kind within 0.18 s, so busy moments stay clean.
 | `sd_sticker` | a result sticker pops in | `pop` |
 | `sd_done` | the last sticker | `success_05_ding` |
 Same-role sounds closer than 0.18 s are skipped. Pin your own with `SFX=[(t, "name")]` as usual.
+
+
+## How the engine uses them (3.0.1)
+
+- A struck-out (wrong) card plays an **error** sound when it appears, a **razor** cut when the line strikes it, and a **success** chime when the right answer shows. The pen sounds are only for highlights you pin yourself.
+- Cards, clicks and chimes never repeat the same file twice in a row; hand-placed pins let you vary them yourself.
+- Beam: a light pulse leaving a node = soft whoosh, a pulse arriving = chime, and the receiving node lights up (`"glow": False` on a node turns the light off).
+- Typing is a burst of exactly the on-screen typing time, so make the code line's speed match the words (`("t", "text", chars_per_second)`).
+- Hand-placed sounds: `SFX = [(seconds, "pop_01"), (seconds, "typing", duration)]` with `SFX_AUTO = False`. To keep the automatic sound of only some kinds: `SFX_AUTO_ONLY = ["beam_pulse", "beam_hit", "typing"]`.

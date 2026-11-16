@@ -24,9 +24,25 @@ def _ev(t, kind, cat, gain=1.0, src="", dur=None, name=None): return Event(float
 KINDS = {
     "scene_cut": "whoosh at a scene cut", "chapter_change": "transition sound when the chapter (stage) changes", "item": "pop/click as cards, recap rows, steps appear",
     "ok": "success sound for an ok:true card", "error": "error sound for an ok:false card", "key_hit": "impact for a key card", "shock": "impact + glitch", "mystery": "riser",
-    "strike": "pen stroke", "counter": "click at a counter start", "typing": "typing burst for code and chat lines", "node": "tick for system-diagram items",
-    "connect": "chime when a beam connection starts drawing", "razor": "razor sound at a timeline split", "clip_remove": "soft whoosh when a timeline clip is removed",
+    "strike": "error sound when the wrong (struck) card appears", "strike_line": "razor cut when the line strikes it out", "strike_right": "success when the right answer appears", "counter": "click at a counter start", "typing": "typing burst for code and chat lines", "node": "tick for system-diagram items",
+    "connect": "chime when a beam connection starts drawing (line-only paths)", "beam_pulse": "soft swoosh when a light pulse leaves a node", "beam_hit": "chime when a pulse reaches a node (the node lights up)", "razor": "razor sound at a timeline split", "clip_remove": "soft whoosh when a timeline clip is removed",
     "track_toggle": "click when a timeline track is switched", "morph": "pop when a persistent entity changes state", "entity_in": "pop when a persistent entity appears"}
+
+def beam_pulses(b):
+    """Every travelling pulse of a beam block (same timing rules as blocks_path.draw_beam_block): list of (t_launch, t_arrive, node_id_that_receives). Pure, used by the animation (receiving node lights up) and by the sound (swoosh + chime)."""
+    out = []; nodes = b.get("nodes", {})
+    for p_ in b.get("paths", []):
+        fr, to = p_.get("from"), p_.get("to")
+        if fr not in nodes or to not in nodes: continue
+        style = p_.get("style", "both")
+        if style == "draw": continue
+        dur = max(0.2, p_.get("dur", 0.9)); start = p_["t"] + (0.45 if style == "both" else 0.0); n = max(1, int(p_.get("pulses", 1))); gap = dur * 0.55; mode = p_.get("dir", "fwd")
+        cycles = 6 if p_.get("loop") else 1; period = n * gap + dur * 0.6
+        for c in range(cycles):
+            for i in range(n):
+                fwd = True if mode == "fwd" else False if mode == "back" else (i % 2 == 0)
+                tl = start + c * period + i * gap; out.append((tl, tl + dur, to if fwd else fr))
+    return sorted(out)
 
 _ITEM_BLOCKS = ("card", "recap", "icards", "steplist", "fixcards", "versus", "chain", "matrix")
 _SD = {"sd_stage": "transition", "sd_tick": "click", "sd_ok": "success", "sd_err": "error", "sd_env": "whoosh", "sd_sticker": "pop", "sd_done": "success"}
@@ -64,7 +80,7 @@ def collect(SC, events_cfg=None, off_env=""):
         if s_sfx is False: prev_stage = s.get("stage"); continue
         big = s.get("stage") != prev_stage and k > 0; prev_stage = s.get("stage"); sc = "scene %d" % k
         if k > 0 and not _cut_silent(s): emit(_ev(s["t0"] - 0.1, "chapter_change" if big else "scene_cut", "transition" if big else "whoosh", 1.0, sc), s_sfx, None)
-        pops = ["pop", "click", "pop", "click"]; j = 0
+        pops = ["pop", "click", "pop", "click"]; j = 0   # the library picker never repeats the same file twice in a row, so cards, clicks and chimes vary
         for b in flat(s["blocks"]):
             kd = b.get("k"); t0 = b.get("t", b.get("t0", s["t0"])); bs = b.get("sfx"); src = "%s %s" % (sc, kd)
             E = lambda ev: emit(ev, s_sfx, bs)
@@ -98,7 +114,10 @@ def collect(SC, events_cfg=None, off_env=""):
                     E(_ev(te_, "node", _SD[nm_], g_, src, None, "success_05_ding" if nm_ == "sd_done" else ("whoosh_02_soft" if nm_ == "sd_env" else None)))
             elif kd == "shock": E(_ev(t0 - .05, "shock", "impact", 1.0, src)); E(_ev(t0, "shock", "glitch", .5, src))
             elif kd == "mystery": E(_ev(max(s["t0"], t0 - 0.2), "mystery", "riser", .7, src))
-            elif kd == "strike": E(_ev(t0, "strike", "pen", .8, src))
+            elif kd == "strike":   # wrong card appears = error sound, the cut-through line = razor, the right answer = success (no hand-writing sound)
+                E(_ev(t0, "strike", "error", .75, src))
+                if b.get("t_strike") is not None: E(_ev(b["t_strike"], "strike_line", "razor", .5, src))
+                if b.get("t_right") is not None: E(_ev(b["t_right"], "strike_right", "success", .7, src))
             elif kd == "counter": E(_ev(b.get("t0", t0), "counter", "click", .8, src))
             elif kd in ("code", "codeann"):
                 for ln in b.get("lines", []):
@@ -108,7 +127,10 @@ def collect(SC, events_cfg=None, off_env=""):
                     if isinstance(ln, (tuple, list)) and isinstance(ln[0], (int, float)): E(_ev(ln[0], "typing", "typing", .9, src, .9)); E(_ev(ln[0] + 1.0, "ok", "success", .6, src))
             elif kd == "beam":
                 for p_ in b.get("paths", []):
-                    if p_.get("style", "both") != "beam": E(_ev(p_["t"] + 0.3, "connect", "success", .5, src, None, "success_02_notify_a"))
+                    if p_.get("style", "both") == "draw": E(_ev(p_["t"] + 0.3, "connect", "success", .5, src, None, "success_02_notify_a"))
+                for j, (tl, ta, _nid) in enumerate(beam_pulses(b)):
+                    E(_ev(tl, "beam_pulse", "whoosh", .35, src, None, ("whoosh_02_soft", "whoosh_03_air", "whoosh_01_swoosh")[j % 3]))
+                    E(_ev(ta, "beam_hit", "success", .7, src, None, ("success_03_notify_b", "success_04_notify_c", "success_02_notify_a")[j % 3]))
             elif kd == "tracks":
                 for tr in b.get("tracks", []):
                     for tt, _v in tr.get("active", []): E(_ev(tt, "track_toggle", "click", .5, src, None, "click_04_tick"))

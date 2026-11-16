@@ -21,6 +21,7 @@ Name the WAV `<name>_vo.wav` and run from its folder.
 python3 engine/align_vo.py mytopic_vo.wav mytopic           # silence-based phrases -> mytopic_segs.txt (no model needed)
 SHERPA=~/sherpa WORK=$PWD bash engine/run_asr.sh mytopic    # optional: text of each phrase -> mytopic_seg_asr.txt (needs onnxruntime, scipy, Whisper-small)
 python3 engine/align.py my_scenes voice.wav                 # optional: snap scene times to the voice
+# best: python3 engine/asr_phrases.py voice.wav --model DIR --out asr.json ; python3 engine/align.py voice.wav script.txt --asr asr.json
 python3 engine/suggest.py script.txt                        # optional: scene ideas from the script
 ```
 `_segs.txt`: first line `name total-seconds count`, second line `start-end` of every phrase. These are the times your cards/code/poll should appear. Silence threshold -42 dB, gaps < 0.14 s merged (tune `thr`, `gap` in `segments()`). Whisper-small (sherpa-onnx model files only, ~640 MB): `curl -LO https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-small.tar.bz2` and extract into `~/sherpa/`. Arabic ASR text is noisy: use it for times, trust your script for words. Map script lines to phrases in order; set `T_END`, `TAG1`, `TAG2` from the last three phrases ("Ctrl H", sign-off lines).
@@ -29,9 +30,9 @@ python3 engine/suggest.py script.txt                        # optional: scene id
 
 ### Automated
 ```bash
-python3 engine/build.py my_scenes --vo voice.wav --out out [--formats wide,reel] [--max-part 180] [--strict] [--plan-only]
+python3 engine/build.py my_scenes --vo voice.wav --out out [--formats wide,reel] [--max-part 180] [--strict] [--plan-only] [--audio-only]
 ```
-Does: lint + contact sheet, auto split of long videos (parts at scene boundaries), render per format, SFX track, mux (voice + SFX at 30%), `meta.md`, `chapters.txt`.
+Does: lint + contact sheet, auto split of long videos (parts at scene boundaries), render per format, SFX track, mux (voice + SFX at 42% of the voice), `meta.md`, `chapters.txt`.
 
 | flag | meaning |
 |---|---|
@@ -41,6 +42,7 @@ Does: lint + contact sheet, auto split of long videos (parts at scene boundaries
 | `--max-part` | seconds per part before auto split (default 180) |
 | `--strict` | lint warnings stop the build |
 | `--plan-only` | print the part plan and exit |
+| `--audio-only` | no render: re-make SFX, re-cut the voice, re-mix and re-normalise on the frames of the last full build (about 20 s). For SFX pins, mix level, loudness or a new voice of the same length; stops with a message if the frames are missing or the scene length changed |
 | `--check-voice` | stop the build when the WAV and the scene file disagree (without the flag the CHECK lines are only printed) |
 | `--check-voice-only` | run the check and exit, no render |
 
@@ -60,7 +62,7 @@ ffmpeg -y -i v_wide.mp4 -i voice.wav -i sfx.wav -filter_complex_script engine/mi
 ### Checks before rendering (no video is rendered)
 ```bash
 python3 engine/check_voice.py my_scenes voice.wav            # WAV length vs DUR, T_END / TAG1 / TAG2 inside the voice, gaps between scenes
-python3 engine/sfx_preview.py my_scenes.py voice.wav pv.mp3 [--from 0 --to 60]   # hear voice + sound effects (30%) as a small mp3
+python3 engine/sfx_preview.py my_scenes.py voice.wav pv.mp3 [--from 0 --to 60]   # hear voice + sound effects (42% of the voice) as a small mp3
 python3 engine/smoke.py [--quick]                              # whole-kit test: compile, lint examples, frames per theme x format, SFX, docs links, setup
 ```
 
@@ -74,7 +76,7 @@ Cuts at scene boundaries (never inside a scene), prints a plan with a title per 
 16:9 is 1920x1080, 9:16 is 1080x1920. Both are **native renders** from the same scene file (`FMT=wide` / `FMT=reel`): blocks have their own 9:16 layout (`cols_reel`, stacked rows), it is not a crop. `OUT_W` scales the output.
 
 ## 7. Sound effects
-`assets/sfx/` holds 34 sounds named `<category>_<NN>_<name>.mp3` ([SOUNDS.md](SOUNDS.md)). `make_audio_lib.py` places them automatically (cuts, card entrances, code typing, impacts) at 30% under the voice with no repeats. Pin a sound in the scene file:
+`assets/sfx/` holds 35 sounds named `<category>_<NN>_<name>.mp3` ([SOUNDS.md](SOUNDS.md)). `make_audio_lib.py` places them automatically (cuts, card entrances, code typing, impacts) at 42% of the voice level with no repeats. Pin a sound in the scene file:
 ```python
 SFX = [(12.5, "impact_01"), (30.0, "click"), (40.2, "typing", 2.0)]   # (time, file prefix or category[, seconds])
 SFX_AUTO = False      # only the pins

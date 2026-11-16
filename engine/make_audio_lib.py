@@ -3,7 +3,8 @@ usage: make_audio_lib.py <scenes.py|json> <out.wav>
 Scene-file options (all optional):
   TYPING_SPEED = 1.0 (0.7 slower / 1.4 faster keystrokes).   SFX = [(12.5, "impact_01"), (30.0, "click"), (40.2, "typing", 2.0)]   pin a sound: file prefix or category, (t, name[, seconds])
   SFX_AUTO = False                                                       only the pins, no automatic sounds
-  SFX_GAIN = 1.0                                                         overall level before the 30% mix
+  SFX_AUTO_ONLY = ["beam_pulse", "beam_hit"]                             (with SFX_AUTO = False) pins + the automatic sounds of just these event kinds
+  SFX_GAIN = 1.0                                                         overall level before the 42% mix
 Automatic (engine/audio_events.py decides; see docs/SOUNDS.md for the event kinds and the SFX_EVENTS / "sfx" switches): scene cuts -> whoosh (chapter change -> transition), card/icards/recap items -> pop/click/tick (rotating, no repeat),
 ok/✓ -> success, key/shock -> impact, errors -> error, code -> typing burst as long as the typing on screen."""
 import os, sys, wave, random, glob, subprocess, importlib.util
@@ -66,6 +67,12 @@ if getattr(RP, "SFX_AUTO", True):   # every automatic sound comes from audio_eve
     for ev in audio_events.collect(RP.SC, getattr(RP, "SFX_EVENTS", {}), os.environ.get("CTRLH_SFX_OFF", "")):
         if ev.kind == "typing": burst(ev.t, ev.dur, ev.gain)
         else: add(resolve(ev.name)[0] if ev.name else pick(ev.cat), ev.cat, ev.t, ev.gain)
+elif getattr(RP, "SFX_AUTO_ONLY", None):   # SFX_AUTO = False + SFX_AUTO_ONLY = ["beam_pulse", "beam_hit"]: hand-placed pins plus the automatic sounds of just these event kinds
+    import audio_events
+    for ev in audio_events.collect(RP.SC, getattr(RP, "SFX_EVENTS", {}), os.environ.get("CTRLH_SFX_OFF", "")):
+        if ev.kind in RP.SFX_AUTO_ONLY:
+            if ev.kind == "typing": burst(ev.t, ev.dur, ev.gain)   # a typing event is a burst of exactly the on-screen duration (add() would play the whole 8 s clip)
+            else: add(resolve(ev.name)[0] if ev.name else pick(ev.cat), ev.cat, ev.t, ev.gain)
 for pin in pins:
     t, name = pin[0], pin[1]; d = pin[2] if len(pin) > 2 else None; p, cat = resolve(name)
     if cat == "typing" and d: burst(t, d)

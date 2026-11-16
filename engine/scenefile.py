@@ -17,6 +17,7 @@ def load_json(path):
     return m
 def load(name):
     if name.endswith(".json"): return load_json(name)
+    if name.endswith(".py"): name = name[:-3]   # "my_scenes.py" works like "my_scenes"
     try: return importlib.import_module(name)
     except ModuleNotFoundError:
         for p in (name + ".json", os.path.join(os.getcwd(), name + ".json")):
