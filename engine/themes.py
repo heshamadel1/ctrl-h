@@ -5,6 +5,6 @@ THEMES = {
     "paper_orange": dict(accent=(255, 138, 17), card=(251, 248, 238), base=(242, 237, 224), light=True, bg="paper", note="LIGHT paper with an orange highlighter"),
     "soft_cream": dict(accent=(255, 138, 17), card=(255, 253, 249), base=(253, 247, 237), light=True, soft=True, bg="cream", note="SOFT cream: white rounded cards, light shadow, orange glow, dark logo"),
 }
-DEFAULT = "orange"
+DEFAULT = "paper_orange"   # owner decision 2026-11-17; CTRLH_THEME / config "theme" still choose any theme
 # `bg`: signature background style of a theme (used when config bg_style is the default hud_live; set "bg_style_locked": true to keep your own)
 def hexs(c): return "#%02X%02X%02X" % tuple(c)

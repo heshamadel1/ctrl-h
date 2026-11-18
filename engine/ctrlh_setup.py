@@ -26,7 +26,7 @@ def main():
     cfg["language"] = g(a.language, "Voiceover language", "English")
     cfg["topics"] = [x.strip() for x in g(a.topics, "Content topics (comma separated)", "Programming").split(",") if x.strip()]
     if inter: print("\nThemes: " + ", ".join(themes.THEMES))
-    th = g(a.theme, "Colour theme", "orange").lower(); cfg["theme"] = th if th in themes.THEMES else "orange"
+    th = g(a.theme, "Colour theme", themes.DEFAULT).lower(); cfg["theme"] = th if th in themes.THEMES else themes.DEFAULT
     if a.accent: cfg["accent"] = a.accent
     if a.card_color: cfg["card_color"] = a.card_color
     if a.bg_color: cfg["bg_color"] = a.bg_color

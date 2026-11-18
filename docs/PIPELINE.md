@@ -23,6 +23,7 @@ SHERPA=~/sherpa WORK=$PWD bash engine/run_asr.sh mytopic    # optional: text of 
 python3 engine/align.py my_scenes voice.wav                 # optional: snap scene times to the voice
 # best: python3 engine/asr_phrases.py voice.wav --model DIR --out asr.json ; python3 engine/align.py voice.wav script.txt --asr asr.json
 python3 engine/suggest.py script.txt                        # optional: scene ideas from the script
+python3 engine/make_video.py voice.wav script.txt [--model DIR] [--build]   # all of the above in one command: timing (ASR text matching with a model) + draft scene file + lint
 ```
 `_segs.txt`: first line `name total-seconds count`, second line `start-end` of every phrase. These are the times your cards/code/poll should appear. Silence threshold -42 dB, gaps < 0.14 s merged (tune `thr`, `gap` in `segments()`). Whisper-small (sherpa-onnx model files only, ~640 MB): `curl -LO https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-small.tar.bz2` and extract into `~/sherpa/`. Arabic ASR text is noisy: use it for times, trust your script for words. Map script lines to phrases in order; set `T_END`, `TAG1`, `TAG2` from the last three phrases ("Ctrl H", sign-off lines).
 

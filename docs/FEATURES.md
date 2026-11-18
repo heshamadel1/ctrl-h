@@ -166,6 +166,7 @@ Per-series theme: `"series": "name"` in the config (with `series_name`) override
 | `python3 engine/docs_gallery.py` | redraw the feature pictures |
 | `python3 engine/align.py <scenes> voice.wav` | align scene times to the audio (silence + weights; `--whisper` optional) |
 | `python3 engine/suggest.py <script.txt>` | suggest scenes/blocks from a script |
+| `python3 engine/make_video.py voice.wav script.txt [--model DIR] [--build]` | voice + script -> timing + draft scene file + lint (and the build with `--build`) |
 | `python3 engine/preview.py <scenes>` | fast low-res preview |
 | `python3 engine/srt.py <scenes> out.srt` | subtitles |
 | `meta.py` also writes `<name>_chapters.txt` | YouTube chapters |

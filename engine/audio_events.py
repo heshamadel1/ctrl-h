@@ -26,7 +26,7 @@ KINDS = {
     "ok": "success sound for an ok:true card", "error": "error sound for an ok:false card", "key_hit": "impact for a key card", "shock": "impact + glitch", "mystery": "riser",
     "strike": "error sound when the wrong (struck) card appears", "strike_line": "razor cut when the line strikes it out", "strike_right": "success when the right answer appears", "counter": "click at a counter start", "typing": "typing burst for code and chat lines", "node": "tick for system-diagram items",
     "connect": "chime when a beam connection starts drawing (line-only paths)", "beam_pulse": "soft swoosh when a light pulse leaves a node", "beam_hit": "chime when a pulse reaches a node (the node lights up)", "razor": "razor sound at a timeline split", "clip_remove": "soft whoosh when a timeline clip is removed",
-    "track_toggle": "click when a timeline track is switched", "morph": "pop when a persistent entity changes state", "entity_in": "pop when a persistent entity appears"}
+    "meaning": "sound chosen by what the card SAYS (wrong/bug -> error, done/works -> success, warning -> glitch, question -> riser) instead of the plain pop; SFX_EVENTS {\"meaning\": False} turns it off", "track_toggle": "click when a timeline track is switched", "morph": "pop when a persistent entity changes state", "entity_in": "pop when a persistent entity appears"}
 
 def beam_pulses(b):
     """Every travelling pulse of a beam block (same timing rules as blocks_path.draw_beam_block): list of (t_launch, t_arrive, node_id_that_receives). Pure, used by the animation (receiving node lights up) and by the sound (swoosh + chime)."""
@@ -43,6 +43,28 @@ def beam_pulses(b):
                 fwd = True if mode == "fwd" else False if mode == "back" else (i % 2 == 0)
                 tl = start + c * period + i * gap; out.append((tl, tl + dur, to if fwd else fr))
     return sorted(out)
+
+import re as _re
+_AR = str.maketrans({"أ": "ا", "إ": "ا", "آ": "ا", "ى": "ي", "ة": "ه", "ؤ": "و", "ئ": "ي"})
+def _n(t): return _re.sub(r"[\u064b-\u065f\u0640]", "", str(t).lower()).translate(_AR)
+# meaning -> (library category, gain). First match wins in this order. Arabic words are matched inside the normalised text, Latin words on word starts.
+_MEANING = [
+    ("error", "error", .7, r"خطا|غلط|مشكل|خطر|ممنوع|اختراق|هجوم|تسريب|ثغر|\b(error|wrong|bug|fail|crash|attack|hack|leak|insecure|vulnerab|broken|unsafe)"),
+    ("warning", "glitch", .45, r"تحذير|احذر|انتبه|\b(warning|careful|danger|beware)"),
+    ("success", "success", .7, r"نجح|نجاح|الحل|تمام|امن|امان|يشتغل|\b(success|fixed|solved|works|done|secure|passed|safe)\b"),
+    ("question", "riser", .4, r"[؟?]\s*$|^(ليه|ازاي|هل|لماذا|كيف)\b|^(why|how|what if)\b"),
+]
+def meaning_of(*texts):
+    """('error'|'warning'|'success'|'question', category, gain) from what the on-screen text says, or None. Pure."""
+    t = _n(" ".join(str(x) for x in texts if isinstance(x, str)))
+    if not t.strip(): return None
+    for name, cat, g, pat in _MEANING:
+        if _re.search(pat, t): return (name, cat, g)
+    return None
+def _item_texts(b, it):
+    if isinstance(it, dict): return [it.get(k) for k in ("text", "title", "label", "name", "head", "sub", "say")]
+    if isinstance(it, (tuple, list)): return [x for x in it if isinstance(x, str)]
+    return []
 
 _ITEM_BLOCKS = ("card", "recap", "icards", "steplist", "fixcards", "versus", "chain", "matrix")
 _SD = {"sd_stage": "transition", "sd_tick": "click", "sd_ok": "success", "sd_err": "error", "sd_env": "whoosh", "sd_sticker": "pop", "sd_done": "success"}
@@ -80,18 +102,26 @@ def collect(SC, events_cfg=None, off_env=""):
         if s_sfx is False: prev_stage = s.get("stage"); continue
         big = s.get("stage") != prev_stage and k > 0; prev_stage = s.get("stage"); sc = "scene %d" % k
         if k > 0 and not _cut_silent(s): emit(_ev(s["t0"] - 0.1, "chapter_change" if big else "scene_cut", "transition" if big else "whoosh", 1.0, sc), s_sfx, None)
+        last_q = -9.0   # one question riser per 3 s in a scene
         pops = ["pop", "click", "pop", "click"]; j = 0   # the library picker never repeats the same file twice in a row, so cards, clicks and chimes vary
         for b in flat(s["blocks"]):
             kd = b.get("k"); t0 = b.get("t", b.get("t0", s["t0"])); bs = b.get("sfx"); src = "%s %s" % (sc, kd)
             E = lambda ev: emit(ev, s_sfx, bs)
             if kd in _ITEM_BLOCKS:
-                ts = [b["t"]] if kd == "card" and "t" in b else []
+                ts = [(b["t"], [b.get("text"), b.get("title")])] if kd == "card" and "t" in b else []
                 for key in ("items", "cols", "steps", "rows"):
                     for it in (b.get(key) if isinstance(b.get(key), (list, tuple)) else []):
                         ti = it.get("t") if isinstance(it, dict) else (it[0] if isinstance(it, (tuple, list)) and it and isinstance(it[0], (int, float)) else None)
-                        if ti is not None: ts.append(ti)
-                for ti in ts or [t0]:
-                    c = pops[j % 4]; E(_ev(ti, "item", c, .8, src)); j += 1
+                        if ti is not None: ts.append((ti, _item_texts(b, it)))
+                for ti, tx in ts or [(t0, [b.get("text"), b.get("title")])]:
+                    mn = None if b.get("ok") is not None else meaning_of(*tx)   # an explicit ok:true/false keeps its own sound
+                    if mn and mn[0] == "question" and ti - last_q < 3.0: mn = None   # one riser per 3 s at most
+                    if mn and cfg.get("meaning", True) not in (False, 0) and "meaning" not in off:
+                        if mn[0] == "question": last_q = ti; E(_ev(max(s["t0"], ti - .15), "meaning", mn[1], mn[2], src))
+                        else: E(_ev(ti, "meaning", mn[1], mn[2], src))
+                    else:
+                        c = pops[j % 4]; E(_ev(ti, "item", c, .8, src))
+                    j += 1
                 if b.get("ok") is True: E(_ev(t0 + .2, "ok", "success", .8, src))
                 if b.get("ok") is False: E(_ev(t0 + .05, "error", "error", .7, src))
                 if b.get("key"): E(_ev(t0 - .02, "key_hit", "impact", .6, src))

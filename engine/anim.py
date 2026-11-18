@@ -172,6 +172,13 @@ def _wrap_fit(text, size, maxw):
     return lines
 
 
+def fit_size(text, size, maxw, lo=20):
+    """auto-fit (3.0.2): the largest font size <= size whose DRAWN width is <= maxw (never below lo). Text that already fits keeps its size, so nothing changes for it."""
+    s_ = int(size)
+    while s_ > lo and _tok_w(text, s_) > maxw: s_ -= 2
+    return s_
+
+
 def card_lines(blk, width):
     """wrapped lines of a card; the font size shrinks (down to 26) until every line fits INSIDE the card (fixed 2026-11-03: long Latin text left the card)"""
     if width < 600: maxw = width - 70
@@ -431,6 +438,7 @@ def draw_chip(d, box, b, t, k):
     if al < 0.01: return
     x0, y0, x1, y1 = box; dy = (1 - al) * 22 + bob(t, k)
     s = b.get("size", 36 if WIDE else 42)
+    s = fit_size(b["text"], s, (x1 - x0) - 90)
     f = F(MONO if b["text"].isascii() else ARB, s)
     w = min(x1 - x0, f.getlength(b["text"]) + 90); cx = (x0 + x1) / 2
     hard(d, (cx - w / 2, y0, cx + w / 2, y1), CARDC, OR, a=al, r=30, off=6, bw=3, dy=dy)
@@ -445,11 +453,12 @@ def draw_title(d, box, b, t, k):
     hard(d, (x0, y0, x1, y1), CARDC, OR, border=lerp(PAPER, OR, hl), a=al, r=30, off=11, bw=5, dy=dy)
     s = b.get("size", 56 if WIDE else 64)
     lines = wrap(b["text"], F(ARB, s), (x1 - x0) - 120) if not b["text"].isascii() else [b["text"]]
+    s = min(s, min(fit_size(l_, s, (x1 - x0) - 120) for l_ in lines)) if lines else s   # one long word / identifier no longer runs out of the card
     cy = (y0 + y1) / 2 + dy - (28 if b.get("sub") else 0)
     for j, ln in enumerate(lines):
         txt(d, ((x0 + x1) / 2, cy + (j - (len(lines) - 1) / 2) * s * 1.2), ln, s, A(OR, al))
     if b.get("sub"):
-        txt(d, ((x0 + x1) / 2, y1 - 52 + dy), b["sub"], int(s * 0.55), A(GRAYC, al))
+        txt(d, ((x0 + x1) / 2, y1 - 52 + dy), b["sub"], fit_size(b["sub"], int(s * 0.55), (x1 - x0) - 120), A(GRAYC, al))
 
 
 def draw_code(d, box, b, t, k):
@@ -755,7 +764,7 @@ def draw_shock(d, box, b, t, k):
     hard(d, (x0, y0, x1, y1), CARDC, OR, border=PAPER, a=fade, r=40, off=14, bw=6, dy=(1 - al) * 24)
     tot = sum(l[1] for l in b["lines"]) * (1.35 if WIDE else 1.15); yy = (y0 + y1) / 2 - tot / 2 + (1 - al) * 24
     for text, size, col in b["lines"]:
-        sz = int(size * (1.0 if WIDE else 0.85) * pop)
+        sz = int(size * (1.0 if WIDE else 0.85) * pop); sz = min(sz, int(fit_size(text, size * (1.0 if WIDE else 0.85), (x1 - x0) - 100) * pop))
         yy += size * (1.35 if WIDE else 1.15) / 2
         txt(d, ((x0 + x1) / 2, yy), text, sz, A(col, fade)); yy += size * (1.35 if WIDE else 1.15) / 2
 
@@ -953,11 +962,11 @@ def draw_mystery(d, box, b, t, k):
     if not rev:
         pu = 1 + 0.12 * math.sin(t * 6); d.ellipse((cx - 56 * pu, cy - 56 * pu, cx + 56 * pu, cy + 56 * pu), fill=A(OR, al))
         d.text((cx, cy), "?", font=F(MONO, int(78 * pu)), fill=A(INK, al), anchor="mm")
-        txt(d, ((x0 + x1) / 2 + 60, cy), b["q"], 48 if WIDE else 52, A(PAPER, al))
+        txt(d, ((x0 + x1) / 2 + 60, cy), b["q"], fit_size(b["q"], 48 if WIDE else 52, (x1 - x0) - 280), A(PAPER, al))
     else:
         a2 = ss(prog(t, b["t_reveal"], b["t_reveal"] + 0.3)); d.ellipse((cx - 56, cy - 56, cx + 56, cy + 56), fill=A(GRN, al))
         d.line([(cx - 24, cy + 2), (cx - 6, cy + 20), (cx + 28, cy - 20)], fill=A(INK, al), width=12)
-        txt(d, ((x0 + x1) / 2 + 60, cy), b["a"], 48 if WIDE else 52, A(PAPER, a2 * al))
+        txt(d, ((x0 + x1) / 2 + 60, cy), b["a"], fit_size(b["a"], 48 if WIDE else 52, (x1 - x0) - 280), A(PAPER, a2 * al))
 
 
 def draw_gain(d, box, b, t, k):
@@ -1008,7 +1017,7 @@ def draw_note(d, box, b, t, k):
     x0, y0, x1, y1 = box; dy = (1 - al) * 26; AM = (255, 196, 80)
     hard(d, (x0, y0, x1, y1), (36, 28, 14), AM, border=AM, a=al, r=26, off=9, bw=4, dy=dy)
     cy = (y0 + y1) / 2 + dy; d.ellipse((x0 + 34, cy - 24, x0 + 82, cy + 24), fill=A(AM, al)); d.text((x0 + 58, cy), "!", font=F(MONO, 34), fill=A(INK, al), anchor="mm")
-    txt(d, ((x0 + x1) / 2 + 40, cy), b["text"], 44 if WIDE else 50, A(PT, al))
+    txt(d, ((x0 + x1) / 2 + 40, cy), b["text"], fit_size(b["text"], 44 if WIDE else 50, (x1 - x0) - 190), A(PT, al))
 
 
 DRAW["note"] = draw_note
@@ -1911,16 +1920,19 @@ for _blk_file in BLOCK_FILES:   # (not named _bf: blocks_paper.py defines a func
     for _k in set(ABS) - _before[1]: BLOCK_SOURCE["abs:" + _k] = _blk_file
 
 
+_ZOOM_FILTER = Image.BICUBIC if os.environ.get("CTRLH_ZOOM_FILTER", "bilinear").lower() == "bicubic" else Image.BILINEAR   # bilinear is 2.6x faster; bicubic = the pre-3.0.2 look
+
+
 def zoom_affine(S, z, ya):
-    """Same pixels as S.transform((W, H), AFFINE, (1/z, 0, W/2 - W/(2z), 0, 1/z, ya - ya/z), BICUBIC) but the part of the output that cannot receive content
+    """Same pixels as S.transform((W, H), AFFINE, (1/z, 0, W/2 - W/(2z), 0, 1/z, ya - ya/z), _ZOOM_FILTER) but the part of the output that cannot receive content
     (right of / below the content box) is not computed. The output origin and coefficients are NOT changed: Pillow accumulates the sample position pixel by pixel, so moving
     the origin changes rounding in rare pixels (a first attempt that also cropped left/top differed by 1 level in 4 pixels of 1 frame in 14). docs/PERFORMANCE.md has the numbers."""
     bb = S.getbbox(alpha_only=False)
     if bb is None: return S
     c_ = W / 2 - W / (2 * z); f_ = ya - ya / z
     ox1 = min(W, int(math.ceil((bb[2] + 4 - c_) * z)) + 2); oy1 = min(H, int(math.ceil((bb[3] + 4 - f_) * z)) + 2)
-    if ox1 >= W and oy1 >= H: return S.transform((W, H), Image.AFFINE, (1 / z, 0, c_, 0, 1 / z, f_), Image.BICUBIC)
-    part = S.transform((ox1, oy1), Image.AFFINE, (1 / z, 0, c_, 0, 1 / z, f_), Image.BICUBIC)
+    if ox1 >= W and oy1 >= H: return S.transform((W, H), Image.AFFINE, (1 / z, 0, c_, 0, 1 / z, f_), _ZOOM_FILTER)
+    part = S.transform((ox1, oy1), Image.AFFINE, (1 / z, 0, c_, 0, 1 / z, f_), _ZOOM_FILTER)
     out = Image.new("RGBA", (W, H), (0, 0, 0, 0)); out.paste(part, (0, 0)); return out
 
 
@@ -2109,7 +2121,7 @@ class Video:
 
 def _enc_cmd(out):
     return ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
-            "-vf", (f"scale={os.environ['OUT_W']}:-2:flags=lanczos:" if os.environ.get("OUT_W") else "scale=") + "out_color_matrix=bt709:out_range=tv,format=yuv420p", "-c:v", "libx264", "-preset", "medium", "-crf", "17", "-g", "30",
+            "-vf", (f"scale={os.environ['OUT_W']}:-2:flags=lanczos:" if os.environ.get("OUT_W") else "scale=") + "out_color_matrix=bt709:out_range=tv,format=yuv420p", "-c:v", "libx264", "-preset", os.environ.get("CTRLH_X264_PRESET", "veryfast"), "-crf", "17", "-g", "30",
             "-profile:v", "high", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv", out]
 
 

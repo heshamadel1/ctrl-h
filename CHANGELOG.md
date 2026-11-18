@@ -1,8 +1,17 @@
 # Changelog
 
+## 3.0.2
+
+- **Faster render (about 25% less time on a 12 s reel clip):** the camera zoom now samples with bilinear instead of bicubic (2.6x faster per frame, differences below 1/255 on average and invisible at 3x magnification; `CTRLH_ZOOM_FILTER=bicubic` brings the old look back), and the encoder preset is `veryfast` instead of `medium` (2.5x faster, SSIM 0.9966 vs 0.9975 at the same crf 17, file not larger; `CTRLH_X264_PRESET=medium` to override).
+- **`paper_orange` is the default theme** of the engine (`themes.DEFAULT`), the setup wizard, captions and the storyboard template; `CTRLH_THEME` / config `theme` still choose any theme. The owner profile `profiles/ctrlh.config.json` uses it too.
+- **Sound by meaning (automatic):** a card or list item whose text says something wrong (غلط، خطأ، bug, error ...) plays an error sound, one that says it works (نجح، الحل، secure, fixed ...) a success sound, a warning a glitch, and a question a quiet riser just before it appears. Explicit `ok` keeps its sound. New event kind `meaning`; `SFX_EVENTS = {"meaning": False}` turns it off (docs/SOUNDS.md).
+- **Text auto-fit:** one-line text in `chip`, `note`, `title` (and its `sub`), `shock` and `mystery` shrinks (never below 20 px) when it would run out of its block, like cards already did. Text that fits is unchanged. New test `tests/fit_test.py`.
+- **`make_video.py`:** one command from `voice.wav` + `script.txt` to a draft scene file (timing by `align.py --asr` when a model folder is given, else silence timing; then `suggest.py` and lint); `--build` also renders. Never overwrites an existing scene file without `--force`.
+- **Golden tests:** new cases `G11_beam` (beam nodes, pulses) and `G12_tracks` (timeline) in orange and paper_orange, wide and reel (40 frames, 282 in total). Baselines need the owner's approval (the zoom change moves the pixels of nearly every frame slightly).
+
 ## 3.0.1
 
-Fixes bug found while making Reel (first real use of the 3.0.0 features), plus three small tools from making the Kit promo reel.
+Fixes found while making the JWT vs Sanctum Reel (first real use of the 3.0.0 features), plus three small tools from making the Kit promo reel.
 
 - **`build.py --audio-only`:** re-makes the SFX, re-cuts the voice, re-mixes and re-normalises on the frames of the last full build, with no render (about 20 s instead of 8 to 10 minutes). Use it after a change to SFX pins, the mix level, loudness or a new voice WAV of the same length. It stops with a clear message when the frames are missing or the scene length changed.
 - **Scene option `valign: "mid"`:** puts the block stack lower on the screen (useful for a reel without captions).

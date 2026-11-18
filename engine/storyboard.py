@@ -12,7 +12,7 @@ needed to render. A storyboard compiles to exactly the scene data the engine alr
 Document (JSON):
 { "storyboard": 1,
   "meta":      {"title": "...", "language": "ar", "notes": "free text"},
-  "output":    {"formats": ["wide", "reel"], "theme": "orange", "loudness": "reels"},      # theme -> CTRLH_THEME, loudness -> CTRLH_LOUDNESS (a setting you already made in the environment/config wins)
+  "output":    {"formats": ["wide", "reel"], "theme": "paper_orange", "loudness": "reels"},      # theme -> CTRLH_THEME, loudness -> CTRLH_LOUDNESS (a setting you already made in the environment/config wins)
   "voiceover": {"file": "voice.wav", "script": "script.txt"},                              # informational for the tools; the render takes the wav via build.py --vo
   "timing":    {"duration": 58.0, "end": 54.5, "tag1": 54.7, "tag2": 56.0, "subscribe_at": 30, "follow_at": 52},   # all optional: end = end of the last scene, duration = tag2 + 1.5 ...
   "stages":    ["chapter 1", "chapter 2"], "tech": ["Laravel", "Redis"],
@@ -193,7 +193,7 @@ def from_scenes(N, title=""):
     if getattr(N, "SFX", None): d.setdefault("audio", {})["pins"] = jsonable(N.SFX)
     return d
 
-TEMPLATE = {"storyboard": 1, "meta": {"title": "My video", "language": "ar"}, "output": {"formats": ["wide", "reel"], "theme": "orange"},
+TEMPLATE = {"storyboard": 1, "meta": {"title": "My video", "language": "ar"}, "output": {"formats": ["wide", "reel"], "theme": "paper_orange"},
             "voiceover": {"file": "voice.wav"}, "stages": ["Problem", "Solution"], "tech": ["Laravel"],
             "scenes": [{"id": "intro", "start": 0, "end": 8, "stage": 0, "head": "The problem", "say": "what is said here",
                         "blocks": [{"k": "card", "t": 1.0, "text": "A first card", "ok": False}]},

@@ -1,6 +1,6 @@
 # Ctrl + H Video Kit
 
-[![Release](https://img.shields.io/badge/release-v3.0.1-FF8A11)](RELEASE_NOTES.md)
+[![Release](https://img.shields.io/badge/release-v3.0.2-FF8A11)](RELEASE_NOTES.md)
 [![Claude Free first](https://img.shields.io/badge/Claude-Free%20first-D97757)](docs/WORKFLOWS.md)
 [![Advanced agents optional](https://img.shields.io/badge/advanced%20agents-optional-555555)](docs/WORKFLOWS.md#advanced-agent-workflow-optional)
 [![Formats](https://img.shields.io/badge/formats-16%3A9%20%C2%B7%209%3A16-2b2b2b)](docs/PIPELINE.md)
@@ -46,6 +46,7 @@ Read [docs/WORKFLOWS.md](docs/WORKFLOWS.md) for the exact steps and the list of 
 | **One command**                     | `build.py`: lint, render, SFX, mux, `meta.md`, `chapters.txt`; long videos split into parts                                                                                                                                                                                                                                            |
 | **Safety**                          | `lint.py` (layout, timing, logo, features), `check_voice.py` (WAV vs scene file), `smoke.py` (whole-kit test), `sfx_preview.py` (hear the sounds), all without rendering a video                                                                                                                                                       |
 | **Clips**                           | `reels.py` cuts 30-60 s Reels/Shorts from a long video                                                                                                                                                                                                                                                                                 |
+| **New in v3.0.2**                   | `paper_orange` is the default theme, sound by meaning (error/success/glitch/riser from the card text), text auto-fit, `make_video.py` (voice + script to a draft scene file), about 25% faster render (bilinear zoom, x264 veryfast), golden cases for beam and tracks.                                                                |
 | **New in v3.0.1**                   | SFX at 42% of the voice with no ducking, error sounds on wrong cards, beam nodes that light up, living paper background, `align.py` fix, promise pill readable on light themes, storyboard accepts `promise`/button overlays, scene names with `.py`, `build.py --audio-only`, `valign`, `align.py --asr`. Earlier, **New in v3.0.0**: | scene transitions and camera moves, persistent entities, animated paths (`beam`), timeline block (`tracks`), audio events and loudness targets, render cache, storyboard JSON, two-format layout check ([RELEASE_NOTES.md](RELEASE_NOTES.md)) |
 | **Skills**                          | `ctrlh-video-style` (asks before every video) and `ctrlh-thumbnail-style`                                                                                                                                                                                                                                                              |
 

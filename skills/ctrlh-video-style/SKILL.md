@@ -5,7 +5,7 @@ description: "Make branded explainer videos (Wide 16:9 or Reel 9:16) synced to a
 
 # Video style kit (Ctrl + H engine): branded explainer videos, 16:9 or 9:16 (asked per video), synced to a voiceover
 
-Version 3.0.1. Project: https://github.com/heshamadel1/ctrl-h. The engine is generic: identity, colours, cards and background come from a brand profile (`ctrlh.config.json`). The Ctrl + H sections further down are the OWNER PROFILE (an example profile: `profiles/ctrlh.config.json`).
+Version 3.0.2. Project: https://github.com/heshamadel1/ctrl-h. The engine is generic: identity, colours, cards and background come from a brand profile (`ctrlh.config.json`). The Ctrl + H sections further down are the OWNER PROFILE (an example profile: `profiles/ctrlh.config.json`).
 
 ## WHO THIS IS FOR AND WHAT IS STANDARD (read first)
 - **Primary audience: regular Claude Free users.** The Standard Claude Workflow must always work for them: the user sends a script and a voiceover WAV in a chat, answers your questions, and you run the kit in your own workspace and send the finished video. Never require, ask for or assume: Claude Code, a terminal on the user's machine, local installs, a paid plan, an external agent, Whisper, or any developer tool. Never describe the Free workflow as limited or secondary.
@@ -280,5 +280,8 @@ The HUD background is animated; its bottom chips show the tools of each scene. R
 - The `paper` background is animated (ripple on the dot grid, drifting particles, breathing glow); `CTRLH_BG_MOTION=off` turns it off. Reels with it can pass 30 MB: compress with x264 crf 24 before sending.
 - `align.py` returns one strictly increasing start per line (no duplicate or swapped starts on slow voices); Whisper segments stay the most accurate when available.
 - `align.py voice.wav script.txt --asr asr.json` matches each script line to the spoken text (fuzzy, tolerant of ASR errors); make asr.json with `engine/asr_phrases.py` (offline Whisper ONNX model folder). Prefer it over character-share timing when a model is available.
+- `engine/make_video.py voice.wav script.txt [--model DIR] [--build]`: one command from voice + script to timing (ASR text matching with a model), a draft scene file (`suggest.py`) and lint; review the draft, then build. Never overwrites an existing scene file without `--force`.
+- Sound by meaning is automatic (kind `meaning`): wrong/bug -> error, works/secure -> success, warning -> glitch, question -> riser; `SFX_EVENTS = {"meaning": False}` turns it off. Long one-line text in chip/note/title/shock/mystery shrinks to fit by itself.
+- Engine default theme is `paper_orange` (a user who has not chosen still gets it; anyone other than the owner is still asked). Faster render: camera zoom is bilinear (`CTRLH_ZOOM_FILTER=bicubic` for the old look) and x264 preset is `veryfast` (`CTRLH_X264_PRESET=medium`).
 - `build.py <scene> --audio-only` re-mixes SFX/voice/loudness in ~20 s after changing pins or the mix (needs a previous full build); scene option `valign: "mid"` lowers the block stack for reels without captions.
 - The end card follows the theme: light themes (`paper_orange`, `soft_cream`) end on a light paper background with a dark logo (orange C, dark H and wordmark); dark themes end on black.

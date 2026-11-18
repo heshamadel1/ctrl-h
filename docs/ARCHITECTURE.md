@@ -26,7 +26,7 @@ build.py runs all of it; meta.py writes meta.md / chapters.txt
 | `captions.py`, `asr_captions.py`, `srt.py` | optional burned-in captions, cues from voice + script, SRT |
 | `check_voice.py`, `sfx_preview.py`, `smoke.py` | checks without rendering: WAV vs scene file, hear the SFX, whole-kit test |
 | `reels.py` | 30-60 s clips from a long video at scene boundaries |
-| `align_vo.py`, `asr_seg.py`, `align.py`, `suggest.py`, `plan.py`, `meta.py` | timing and planning helpers |
+| `align_vo.py`, `asr_seg.py`, `asr_phrases.py`, `align.py`, `suggest.py`, `plan.py`, `make_video.py`, `meta.py` | timing and planning helpers (`make_video.py` runs them in one command) |
 | `ctrlh_setup.py`, `ctrlh_preview.py` | first-run questions, preview sheets |
 
 Design rules: everything on screen is declared in `SC`; the same scene file renders 16:9 and native 9:16; the render cache re-renders only the scenes an edit touches; engine settings flow config -> env -> module constants (`_T = themes.THEMES[...]`, `SOFT`, `WIDE`).

@@ -8,7 +8,7 @@ import os, re, sys, subprocess, tempfile, shutil
 here = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, here)
 import ctrlh_config, themes
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
-th = themes.THEMES.get((os.environ.get("CTRLH_THEME") or "orange").lower(), themes.THEMES["orange"])
+th = themes.THEMES.get((os.environ.get("CTRLH_THEME") or themes.DEFAULT).lower(), themes.THEMES[themes.DEFAULT])
 ASSETS = os.environ.get("CTRLH_ASSETS") or os.path.join(here, "..", "assets")
 FONT = os.environ.get("CTRLH_FONT_AR") or os.path.join(ASSETS, "fonts", "Cairo-SemiBold.ttf")
 OR = tuple(th["accent"]) + (255,); LIGHT = bool(th.get("light"))
