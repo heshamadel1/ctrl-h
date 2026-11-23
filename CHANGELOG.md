@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.3
+
+- **Terminal panels are black in every theme (config key `terminal`, default `"dark"`):** `code`, `diff`, `versus` code panels, `http`, `zoom`, `ba`, `predict`, `codeann` and `steplist` now keep a black panel with light text on `paper_orange` and `soft_cream` too. `"terminal": "light"` (or `CTRLH_TERMINAL=light`) brings back light panels, now readable: darker syntax colours, darker red/green in `diff`, a light panel behind the `versus` code, darker amber/cyan in `http`. Colours given in a scene file as the darker shades (for example `DRED`/`DGRN` = (190,30,40)/(18,120,58)) are turned into the light red/green on a dark terminal. Dark themes are unchanged. Videos already published are not touched; rebuild one to get the new look.
+- **Fix:** the red/green rows of `diff` were see-through on light backgrounds (the row replaced the panel pixels); they are now blended with the panel.
+
 ## 3.0.2
 
 - **Faster render (about 25% less time on a 12 s reel clip):** the camera zoom now samples with bilinear instead of bicubic (2.6x faster per frame, differences below 1/255 on average and invisible at 3x magnification; `CTRLH_ZOOM_FILTER=bicubic` brings the old look back), and the encoder preset is `veryfast` instead of `medium` (2.5x faster, SSIM 0.9966 vs 0.9975 at the same crf 17, file not larger; `CTRLH_X264_PRESET=medium` to override).

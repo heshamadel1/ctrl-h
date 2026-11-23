@@ -13,6 +13,7 @@ Every config key is turned into an environment variable by `engine/ctrlh_config.
 | `accent` | `CTRLH_ACCENT` | `#RRGGBB` | theme accent `#FF8A11` | accent colour |
 | `card_color` | `CTRLH_CARD_COLOR` | `#RRGGBB` | theme card | card fill |
 | `bg_color` | `CTRLH_BG_COLOR` | `#RRGGBB` | theme base | background base colour |
+| `terminal` | `CTRLH_TERMINAL` | `dark` or `light` | `dark` | code / diff / versus code / http panels: black with light text in every theme, or light panels with ink text on `paper_orange` and `soft_cream` |
 | `card_styles` / `card_style` | `CTRLH_CARD_STYLES` | string or list | `plain_dark` on a fresh install, `all` in the owner profile | one name, a list, or `all` (names in [CATALOG.md](CATALOG.md)); `card_style` locks ONE look |
 | `bg_style` | `CTRLH_BG_STYLE` | string | `hud_live` (dark), theme background otherwise | see Backgrounds below |
 | `bg_style_locked` | (config only) | bool | `false` | `true` keeps your `bg_style` even if the theme has its own |

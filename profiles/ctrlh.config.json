@@ -15,6 +15,7 @@
     "Back-End Development"
   ],
   "theme": "paper_orange",
+  "terminal": "dark",
   "card_styles": "all",
   "bg_style": "hud_live",
   "signoff_1": "Think Deeper.",

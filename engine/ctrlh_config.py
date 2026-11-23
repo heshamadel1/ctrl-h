@@ -2,7 +2,7 @@
 already understands (a variable you set yourself on the command line always wins).
 Search order: $CTRLH_CONFIG, ./ctrlh.config.json, ../ctrlh.config.json, <kit root>/ctrlh.config.json"""
 import os, json
-KEYMAP = {"theme": "CTRLH_THEME", "accent": "CTRLH_ACCENT", "card_color": "CTRLH_CARD_COLOR", "bg_color": "CTRLH_BG_COLOR",
+KEYMAP = {"terminal": "CTRLH_TERMINAL", "theme": "CTRLH_THEME", "accent": "CTRLH_ACCENT", "card_color": "CTRLH_CARD_COLOR", "bg_color": "CTRLH_BG_COLOR",
           "card_styles": "CTRLH_CARD_STYLES", "card_style": "CTRLH_CARD_STYLES", "bg_style": "CTRLH_BG_STYLE", "background_file": "BGFILE", "assets": "CTRLH_ASSETS",
           "font_ar": "CTRLH_FONT_AR", "font_latin": "CTRLH_FONT_LATIN", "signoff_1": "CTRLH_SIGNOFF_1", "signoff_2": "CTRLH_SIGNOFF_2",
           "label_ok": "CTRLH_LABEL_OK", "label_wrong": "CTRLH_LABEL_WRONG", "label_chapter": "CTRLH_LABEL_CHAPTER",

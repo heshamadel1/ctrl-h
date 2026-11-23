@@ -5,7 +5,7 @@ description: "Make branded explainer videos (Wide 16:9 or Reel 9:16) synced to a
 
 # Video style kit (Ctrl + H engine): branded explainer videos, 16:9 or 9:16 (asked per video), synced to a voiceover
 
-Version 3.0.2. Project: https://github.com/heshamadel1/ctrl-h. The engine is generic: identity, colours, cards and background come from a brand profile (`ctrlh.config.json`). The Ctrl + H sections further down are the OWNER PROFILE (an example profile: `profiles/ctrlh.config.json`).
+Version 3.0.3. Project: https://github.com/heshamadel1/ctrl-h. The engine is generic: identity, colours, cards and background come from a brand profile (`ctrlh.config.json`). The Ctrl + H sections further down are the OWNER PROFILE (an example profile: `profiles/ctrlh.config.json`).
 
 ## WHO THIS IS FOR AND WHAT IS STANDARD (read first)
 - **Primary audience: regular Claude Free users.** The Standard Claude Workflow must always work for them: the user sends a script and a voiceover WAV in a chat, answers your questions, and you run the kit in your own workspace and send the finished video. Never require, ask for or assume: Claude Code, a terminal on the user's machine, local installs, a paid plan, an external agent, Whisper, or any developer tool. Never describe the Free workflow as limited or secondary.

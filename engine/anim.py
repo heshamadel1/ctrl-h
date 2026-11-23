@@ -34,8 +34,11 @@ _DEFAULT_STYLE = "classic"   # what someone who just installed the kit gets
 _cs = os.environ.get("CTRLH_CARD_STYLES", "").replace(" ", "").lower()   # e.g. glass | classic,numbers | all
 import card_names as _cn
 CARD_STYLES = _ALL_STYLES if _cs == "all" else ([c for c in (_cn.canon(x) for x in _cs.split(",")) if c in _ALL_STYLES] or [_DEFAULT_STYLE])
-PANEL = (255, 253, 249) if _T.get("light") else (18, 20, 25); CB = (14, 14, 12) if _T.get("light") else None   # code / terminal / chat panels: light card with ink text in the paper and soft themes
-GRAYC = (110, 106, 96) if _T.get("light") else (150, 156, 170); RED = (255, 92, 92); GRN = (80, 230, 140); AMB = (255, 196, 80); BLUE = (150, 200, 255); VIO = (176, 148, 255)
+# code / terminal panels (3.0.3): CTRLH_TERMINAL / config "terminal" = "dark" (default: black panels with light text in EVERY theme) or "light" (light panels with ink text in the paper and soft themes)
+TERM_DARK = (not _T.get("light")) or os.environ.get("CTRLH_TERMINAL", "dark").lower() != "light"
+_LP = bool(_T.get("light")) and not TERM_DARK   # light code panels
+PANEL = (255, 253, 249) if _LP else (18, 20, 25); CB = (14, 14, 12) if _T.get("light") else None   # the thick ink border and hard shadow stay on light themes
+GRAYC = (110, 106, 96) if _T.get("light") else (150, 156, 170); _TP = PAPER if _LP or not _T.get("light") else (245, 245, 245); _GP = GRAYC if _LP or not _T.get("light") else (150, 156, 170); RED = (255, 92, 92); GRN = (80, 230, 140); AMB = (255, 196, 80); BLUE = (150, 200, 255); VIO = (176, 148, 255)
 # texts that are part of the brand / language; override with environment variables
 LBL_OK = os.environ.get("CTRLH_LABEL_OK", "صح"); LBL_BAD = os.environ.get("CTRLH_LABEL_WRONG", "غلط")
 LBL_CHAPTER = os.environ.get("CTRLH_LABEL_CHAPTER", "الجزء"); LBL_OF = os.environ.get("CTRLH_LABEL_OF", "من")   # chapter banner: "<label> 2 · <stage name>"
@@ -104,13 +107,13 @@ def badge(d, cx, cy, ok, a, r=28):
 
 
 def colorize(text):
-    cols = [PAPER] * len(text)
+    cols = [_TP] * len(text)
     def paint(rx, c):
         for m in re.finditer(rx, text):
             for k in range(m.start(), m.end()): cols[k] = c
-    paint(r"\b\d+\b", GRN); paint(r"\b[A-Z]\w*", VIO); paint(r"\$\w+", PAPER); paint(r"\b(class|public|function|return|fn|use|true|false)\b", OR)
+    paint(r"\b\d+\b", GRN); paint(r"\b[A-Z]\w*", VIO); paint(r"\$\w+", _TP); paint(r"\b(class|public|function|return|fn|use|true|false)\b", OR)
     paint(r"'[^']*'", AMB); paint(r"->\w+", BLUE); paint(r"::\w+", BLUE); paint(r"=>", OR)
-    if _T.get("light"):   # darker syntax colours that read on a light panel
+    if _LP:   # darker syntax colours that read on a light panel
         m = {GRN: (20, 140, 85), VIO: (106, 62, 214), AMB: (176, 108, 0), BLUE: (24, 104, 196), OR: (214, 96, 0)}
         cols = [m.get(c, c) for c in cols]
     return cols
@@ -461,6 +464,12 @@ def draw_title(d, box, b, t, k):
         txt(d, ((x0 + x1) / 2, y1 - 52 + dy), b["sub"], fit_size(b["sub"], int(s * 0.55), (x1 - x0) - 120), A(GRAYC, al))
 
 
+_DARKER_TO_LIGHT = {(190, 30, 40): RED, (18, 120, 58): GRN, (30, 125, 70): (170, 235, 190), (190, 105, 0): (255, 176, 70), (176, 108, 0): AMB}   # scene files may name the darker light-theme colours (DRED/DGRN ...)
+def _tc(c):
+    """explicit code colour: the darker light-theme shades become the light ones on a dark terminal (they would not show on black)"""
+    return _DARKER_TO_LIGHT.get(tuple(c)[:3], c) if not _LP else c
+
+
 def draw_code(d, box, b, t, k):
     al = E(t, b["t"])
     if al < 0.01: return
@@ -480,7 +489,7 @@ def draw_code(d, box, b, t, k):
         ts, text, cps = ln_[0], ln_[1], ln_[2]
         n = int(max(0, (t - ts)) * cps); n = min(n, len(text))
         if n <= 0: continue
-        cols = colorize(text) if len(ln_) < 4 else [ln_[3]] * len(text); xx = x0 + 34; yy = y0 + 60 + j * s * 1.55 + s * 0.8 + dy
+        cols = colorize(text) if len(ln_) < 4 else [_tc(ln_[3])] * len(text); xx = x0 + 34; yy = y0 + 60 + j * s * 1.55 + s * 0.8 + dy
         la = al * (0.32 if (fo is not None and j != fo) else 1.0)
         if fo is not None and j == fo:
             hl = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ImageDraw.Draw(hl).rounded_rectangle((x0 + 14, yy - s * 0.75, x1 - 14, yy + s * 0.75), 10, fill=OR + (int(46 * al),), outline=OR + (int(190 * al),), width=3)
@@ -1484,15 +1493,15 @@ _TOK = _re.compile(r'("[^"]*"|<[^>]+>|\b\d+\b|^\s*[\w-]+(?=:)|[{}\[\]])')
 def _hl(line, col):
     out = []; pos = 0
     for m in _TOK.finditer(line):
-        if m.start() > pos: out.append((line[pos:m.start()], PAPER))
+        if m.start() > pos: out.append((line[pos:m.start()], _TP))
         s = m.group(0)
-        if s[0] == '"': c = col if line[m.end():m.end() + 1] == ":" else (170, 235, 190)
+        if s[0] == '"': c = col if line[m.end():m.end() + 1] == ":" else ((30, 125, 70) if _LP else (170, 235, 190))
         elif s[0] == "<": c = col
-        elif s[0] in "{}[]": c = GRAYC
-        elif s.strip().isdigit(): c = (255, 176, 70)
+        elif s[0] in "{}[]": c = _GP
+        elif s.strip().isdigit(): c = (190, 105, 0) if _LP else (255, 176, 70)
         else: c = col
         out.append((s, c)); pos = m.end()
-    if pos < len(line): out.append((line[pos:], PAPER))
+    if pos < len(line): out.append((line[pos:], _TP))
     return out
 def _put(d, x, y, s, size, col, al, anchor="lm", maxw=None):
     """one text (Latin = mono, otherwise Arabic RTL); anchor lm / rm / mm"""
@@ -1541,7 +1550,7 @@ def draw_versus(d, box, b, t, k):
             if c.get("sub"): _put(d, (cx0 + cx1) / 2, cy0 + 122, c["sub"], 24, GRAYC, al, "mm", cw_ - 2 * pad)
             by0 = cy0 + 160; code_h = 40 + 44 * len(c.get("code", [])) if c.get("code") else 0
             if c.get("code"):
-                d.rounded_rectangle((cx0 + pad, by0, cx1 - pad, by0 + code_h), 18, fill=A((10, 11, 14), al), outline=A(col, al), width=3)
+                d.rounded_rectangle((cx0 + pad, by0, cx1 - pad, by0 + code_h), 18, fill=A(PANEL if _LP else (10, 11, 14), al), outline=A(col, al), width=3)
                 ca = E(t, c.get("code_t", c["t"] + 0.3))
                 for li, ln in enumerate(c["code"]):
                     xx = cx0 + pad + 22; yy = by0 + 36 + li * 44; fs = 28
@@ -1561,7 +1570,7 @@ def draw_versus(d, box, b, t, k):
             bx0 = cx0 + pad; by0 = cy0 + 100; split = cw_ * 0.46
             if c.get("code"):
                 code_h = 28 + 40 * len(c["code"])
-                d.rounded_rectangle((bx0, by0, bx0 + split, by0 + code_h), 16, fill=A((10, 11, 14), al), outline=A(col, al), width=3)
+                d.rounded_rectangle((bx0, by0, bx0 + split, by0 + code_h), 16, fill=A(PANEL if _LP else (10, 11, 14), al), outline=A(col, al), width=3)
                 ca = E(t, c.get("code_t", c["t"] + 0.3))
                 for li, ln in enumerate(c["code"]):
                     xx = bx0 + 16; yy = by0 + 34 + li * 40; fs = _fit(max(c["code"], key=len), 22, split - 30, lo=14)
@@ -1809,7 +1818,7 @@ def draw_http(d, box, b, t, k):
         n = int(max(0, t - (b["t"] + dt)) * 42); n = min(n, len(ln))
         if n > 0:
             hk = ln.split(":")[0] if ":" in ln and not ln.startswith(("{", "\"")) else ""
-            d.text((xa + 30, ya + 130 + j * s_ * 1.55), ln[:n], font=f, fill=A(CY_ if ln.startswith(("{", "\"", "}")) else PAPER, al), anchor="lm")
+            d.text((xa + 30, ya + 130 + j * s_ * 1.55), ln[:n], font=f, fill=A(((20, 110, 150) if _LP else CY_) if ln.startswith(("{", "\"", "}")) else PAPER, al), anchor="lm")
     ra = E(t, b["t_resp"], 0.3)
     if ra > 0.01:
         dy2 = (1 - ra) * 28
@@ -1820,7 +1829,7 @@ def draw_http(d, box, b, t, k):
         d.line([(xa2 + 24, ya2 + 92), (xb2 - 24, ya2 + 92)], fill=A((60, 63, 72), ra), width=2)
         for j, (dt, ln) in enumerate(b.get("res", [])):
             n = int(max(0, t - (b["t_resp"] + dt)) * 42); n = min(n, len(ln))
-            if n > 0: d.text((xa2 + 30, ya2 + 130 + j * s_ * 1.55), ln[:n], font=f, fill=A(scol if '"' in ln and "message" in ln else PAPER, ra), anchor="lm")
+            if n > 0: d.text((xa2 + 30, ya2 + 130 + j * s_ * 1.55), ln[:n], font=f, fill=A((((176, 108, 0) if scol == AMB else ((18, 120, 58) if scol == GRN else (190, 30, 40))) if _LP else scol) if '"' in ln and "message" in ln else PAPER, ra), anchor="lm")
     q = prog(t, b["t_resp"] - 0.9, b["t_resp"] - 0.1)
     if 0 < q < 1:
         e = ss(q)
@@ -1844,12 +1853,12 @@ def draw_diff(d, box, b, t, k):
         ts, kd, text = ln[0], ln[1], ln[2]; qa = E(t, ts, 0.25)
         if qa < 0.01: continue
         yy = y0 + 70 + j * rh + rh / 2 + dy; gone = len(ln) > 3 and t >= ln[3]; la = al * qa * (0.3 if gone else 1.0)
-        col = {"-": RED, "+": GRN}.get(kd, GRAYC)
-        if kd in "-+": d.rectangle((x0 + 12, yy - rh / 2 + 2, x1 - 12, yy + rh / 2 - 2), fill=col + (int(48 * la),))
+        col = {"-": (190, 30, 40) if _LP else RED, "+": (18, 120, 58) if _LP else GRN}.get(kd, GRAYC)
+        if kd in "-+": d.rectangle((x0 + 12, yy - rh / 2 + 2, x1 - 12, yy + rh / 2 - 2), fill=A(lerp(PANEL, col, 0.2 if _LP else 0.17), la) if _T.get("light") else col + (int(48 * la),))
         d.text((x0 + 34, yy), str(j + 1), font=F(MONO, int(s * 0.8)), fill=A(GRAYC, la), anchor="lm")
         d.text((x0 + 34 + s * 2.2, yy), kd if kd != " " else "", font=f, fill=A(col, la), anchor="lm")
         d.text((x0 + 34 + s * 3.4, yy), text, font=F(MONO, _mfit(text, s, x1 - x0 - s * 4.4 - 40)), fill=A(col if kd in "-+" else PAPER, la), anchor="lm")
-        if gone and kd == "-": d.line([(x0 + 34 + s * 3.4, yy), (x0 + 34 + s * 3.4 + f.getlength(text), yy)], fill=A(RED, la), width=3)
+        if gone and kd == "-": d.line([(x0 + 34 + s * 3.4, yy), (x0 + 34 + s * 3.4 + f.getlength(text), yy)], fill=A((190, 30, 40) if _LP else RED, la), width=3)
 
 
 def draw_queue(d, box, b, t, k):
@@ -1918,6 +1927,19 @@ for _blk_file in BLOCK_FILES:   # (not named _bf: blocks_paper.py defines a func
     exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), _blk_file), encoding='utf-8').read(), _blk_file, 'exec'))
     for _k in set(DRAW) - _before[0]: BLOCK_SOURCE[_k] = _blk_file
     for _k in set(ABS) - _before[1]: BLOCK_SOURCE["abs:" + _k] = _blk_file
+
+
+# dark terminal on a light theme (3.0.3): inside these blocks the ink text colour (PAPER) and the grey become the light-on-dark ones
+_TERM_KINDS = ("code", "zoom", "ba", "predict", "http", "diff", "codeann", "steplist")
+def _dark_terminal(fn):
+    def w(*a, **k):
+        g = globals(); old = (g["PAPER"], g["GRAYC"]); g["PAPER"] = (245, 245, 245); g["GRAYC"] = (150, 156, 170)
+        try: return fn(*a, **k)
+        finally: g["PAPER"], g["GRAYC"] = old
+    w.__name__ = getattr(fn, "__name__", "w"); return w
+if _T.get("light") and TERM_DARK:
+    for _k in _TERM_KINDS:
+        if _k in DRAW: DRAW[_k] = _dark_terminal(DRAW[_k])
 
 
 _ZOOM_FILTER = Image.BICUBIC if os.environ.get("CTRLH_ZOOM_FILTER", "bilinear").lower() == "bicubic" else Image.BILINEAR   # bilinear is 2.6x faster; bicubic = the pre-3.0.2 look
